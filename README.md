@@ -1,2 +1,8 @@
 # vz-dis-rs232
-Disassembled code for DIck Smith RS232 Interface
+Disassembled code for Dick Smith RS232 Interface
+
+Version 1.6
+
+No Serial hardware - bitbanging RX/TX lines via software.
+
+

@@ -1,0 +1,288 @@
+# file opened: l:\vz-dis-roms\vtech12\.vscode\tasks.json
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(1): error: Invalid labelname: {
+ 1    0000              {
+ 2    0000                  // See https://go.microsoft.com/fwlink/?LinkId=733558
+ 3    0000                  // for the documentation about the tasks.json format
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(4): error: Unrecognized instruction: "version"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(4): error: Unexpected: "version"
+ 4    0000                  "version"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(4): error: Unrecognized instruction: "2.0.0",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(4): error: Unexpected: "2.0.0",
+ 4    0000                "2.0.0",
+ 5    0000
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(6): error: Unrecognized instruction: "echoCommand"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(6): error: Unexpected: "echoCommand"
+ 6    0000                  "echoCommand"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(6): error: Unrecognized instruction: true,
+ 6    0000                true,
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(7): error: Unrecognized instruction: "tasks"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(7): error: Unexpected: "tasks"
+ 7    0000                  "tasks"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(7): error: Unrecognized instruction: [
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(7): error: Unexpected: [
+ 7    0000                [
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(8): error: Unrecognized instruction: {
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(8): error: Unexpected: {
+ 8    0000                      {
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(9): error: Unrecognized instruction: "label"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(9): error: Unexpected: "label"
+ 9    0000                          "label"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(9): error: Unrecognized instruction: "build",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(9): error: Unexpected: "build",
+ 9    0000                "build",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(10): error: Unrecognized instruction: "type"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(10): error: Unexpected: "type"
+10    0000                          "type"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(10): error: Unrecognized instruction: "shell",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(10): error: Unexpected: "shell",
+10    0000                "shell",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(11): error: Unrecognized instruction: "windows"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(11): error: Unexpected: "windows"
+11    0000                          "windows"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(11): error: Unrecognized instruction: {
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(11): error: Unexpected: {
+11    0000               {
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(12): error: Unrecognized instruction: "command"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(12): error: Unexpected: "command"
+12    0000                              "command"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(12): error: Unrecognized instruction: "${config:sjasmplus}",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(12): error: Unexpected: "${config:sjasmplus}",
+12    0000                "${config:sjasmplus}",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(13): error: Unrecognized instruction: "args"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(13): error: Unexpected: "args"
+13    0000                              "args"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(13): error: Unrecognized instruction: [
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(13): error: Unexpected: [
+13    0000                [
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(14): error: Unrecognized instruction: "--fullpath",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(14): error: Unexpected: "--fullpath",
+14    0000                                  "--fullpath",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(15): error: Unrecognized instruction: "--nologo",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(15): error: Unexpected: "--nologo",
+15    0000                                  "--nologo",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(16): error: Unrecognized instruction: "--msg=war",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(16): error: Unexpected: "--msg=war",
+16    0000                                  "--msg=war",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(17): error: Unrecognized instruction: "-D${config:targetType}",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(17): error: Unexpected: "-D${config:targetType}",
+17    0000                                  "-D${config:targetType}",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(18): error: Unrecognized instruction: "-DTARGETNAME=\"${config:targetName}\"",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(18): error: Unexpected: "-DTARGETNAME=\"${config:targetName}\"",
+18    0000                                  "-DTARGETNAME=\"${config:targetName}\"",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(19): error: Unrecognized instruction: "--inc=${config:includePath}",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(19): error: Unexpected: "--inc=${config:includePath}",
+19    0000                                  "--inc=${config:includePath}",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(20): error: Unrecognized instruction: "--raw=out/${config:targetName}.rom",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(20): error: Unexpected: "--raw=out/${config:targetName}.rom",
+20    0000                                  "--raw=out/${config:targetName}.rom",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(21): error: Unrecognized instruction: "--lst=out/${config:targetName}.lst",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(21): error: Unexpected: "--lst=out/${config:targetName}.lst",
+21    0000                                  "--lst=out/${config:targetName}.lst",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(22): error: Unrecognized instruction: "--sld=out/${config:targetName}.sld",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(22): error: Unexpected: "--sld=out/${config:targetName}.sld",
+22    0000                                  "--sld=out/${config:targetName}.sld",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(23): error: Unrecognized instruction: "--sym=out/${config:targetName}.sym",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(23): error: Unexpected: "--sym=out/${config:targetName}.sym",
+23    0000                                  "--sym=out/${config:targetName}.sym",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(24): error: Unrecognized instruction: "src/${config:targetName}.asm"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(24): error: Unexpected: "src/${config:targetName}.asm"
+24    0000                                  "src/${config:targetName}.asm"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(25): error: Unrecognized instruction: ]
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(25): error: Unexpected: ]
+25    0000                              ]
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(26): error: Unrecognized instruction: },
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(26): error: Unexpected: },
+26    0000                          },
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(27): error: Unrecognized instruction: "problemMatcher"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(27): error: Unexpected: "problemMatcher"
+27    0000                          "problemMatcher"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(27): error: Unrecognized instruction: [
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(27): error: Unexpected: [
+27    0000                [
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(28): error: Unrecognized instruction: "$errmatcher-sjasmplus",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(28): error: Unexpected: "$errmatcher-sjasmplus",
+28    0000                              "$errmatcher-sjasmplus",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(29): error: Unrecognized instruction: ],
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(29): error: Unexpected: ],
+29    0000                          ],
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(30): error: Unrecognized instruction: "group"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(30): error: Unexpected: "group"
+30    0000                          "group"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(30): error: Unrecognized instruction: {
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(30): error: Unexpected: {
+30    0000                {
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(31): error: Unrecognized instruction: "kind"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(31): error: Unexpected: "kind"
+31    0000                              "kind"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(31): error: Unrecognized instruction: "build",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(31): error: Unexpected: "build",
+31    0000                "build",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(32): error: Unrecognized instruction: "isDefault"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(32): error: Unexpected: "isDefault"
+32    0000                              "isDefault"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(32): error: Unrecognized instruction: true
+32    0000                true
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(33): error: Unrecognized instruction: },
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(33): error: Unexpected: },
+33    0000                          },
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(34): error: Unrecognized instruction: "presentation"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(34): error: Unexpected: "presentation"
+34    0000                          "presentation"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(34): error: Unrecognized instruction: {
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(34): error: Unexpected: {
+34    0000                {
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(35): error: Unrecognized instruction: "echo"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(35): error: Unexpected: "echo"
+35    0000                              "echo"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(35): error: Unrecognized instruction: false,
+35    0000                false,
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(36): error: Unrecognized instruction: "reveal"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(36): error: Unexpected: "reveal"
+36    0000                              "reveal"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(36): error: Unrecognized instruction: "silent",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(36): error: Unexpected: "silent",
+36    0000                "silent",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(37): error: Unrecognized instruction: "focus"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(37): error: Unexpected: "focus"
+37    0000                              "focus"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(37): error: Unrecognized instruction: false,
+37    0000                false,
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(38): error: Unrecognized instruction: "panel"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(38): error: Unexpected: "panel"
+38    0000                              "panel"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(38): error: Unrecognized instruction: "shared",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(38): error: Unexpected: "shared",
+38    0000                "shared",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(39): error: Unrecognized instruction: "showReuseMessage"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(39): error: Unexpected: "showReuseMessage"
+39    0000                              "showReuseMessage"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(39): error: Unrecognized instruction: true,
+39    0000                true,
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(40): error: Unrecognized instruction: "clear"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(40): error: Unexpected: "clear"
+40    0000                              "clear"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(40): error: Unrecognized instruction: true
+40    0000                true
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(41): error: Unrecognized instruction: }
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(41): error: Unexpected: }
+41    0000                          }
+42    0000
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(43): error: Unrecognized instruction: },
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(43): error: Unexpected: },
+43    0000                      },
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(44): error: Unrecognized instruction: {
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(44): error: Unexpected: {
+44    0000                      {
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(45): error: Unrecognized instruction: "label"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(45): error: Unexpected: "label"
+45    0000                          "label"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(45): error: Unrecognized instruction: "Verify with Original",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(45): error: Unexpected: "Verify with Original",
+45    0000                "Verify with Original",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(46): error: Unrecognized instruction: "dependsOn"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(46): error: Unexpected: "dependsOn"
+46    0000                          "dependsOn"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(46): error: Unrecognized instruction: "build",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(46): error: Unexpected: "build",
+46    0000                "build",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(47): error: Unrecognized instruction: "type"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(47): error: Unexpected: "type"
+47    0000                          "type"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(47): error: Unrecognized instruction: "shell",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(47): error: Unexpected: "shell",
+47    0000                "shell",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(48): error: Unrecognized instruction: "command"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(48): error: Unexpected: "command"
+48    0000                          "command"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(48): error: Unrecognized instruction: "bin\\test.bat",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(48): error: Unexpected: "bin\\test.bat",
+48    0000                "bin\\test.bat",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(49): error: Unrecognized instruction: "args"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(49): error: Unexpected: "args"
+49    0000                          "args"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(49): error: Unrecognized instruction: [
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(49): error: Unexpected: [
+49    0000                [
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(50): error: Unrecognized instruction: "bin\\${config:targetName}.org",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(50): error: Unexpected: "bin\\${config:targetName}.org",
+50    0000                              "bin\\${config:targetName}.org",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(51): error: Unrecognized instruction: "out\\${config:targetName}.rom",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(51): error: Unexpected: "out\\${config:targetName}.rom",
+51    0000                              "out\\${config:targetName}.rom",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(52): error: Unrecognized instruction: "out\\${config:targetName}.diff"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(52): error: Unexpected: "out\\${config:targetName}.diff"
+52    0000                              "out\\${config:targetName}.diff"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(53): error: Unrecognized instruction: ],
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(53): error: Unexpected: ],
+53    0000                          ],
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(54): error: Unrecognized instruction: "group"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(54): error: Unexpected: "group"
+54    0000                          "group"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(54): error: Unrecognized instruction: {
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(54): error: Unexpected: {
+54    0000                {
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(55): error: Unrecognized instruction: "kind"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(55): error: Unexpected: "kind"
+55    0000                              "kind"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(55): error: Unrecognized instruction: "test",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(55): error: Unexpected: "test",
+55    0000                "test",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(56): error: Unrecognized instruction: "isDefault"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(56): error: Unexpected: "isDefault"
+56    0000                              "isDefault"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(56): error: Unrecognized instruction: true
+56    0000                true
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(57): error: Unrecognized instruction: },
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(57): error: Unexpected: },
+57    0000                          },
+58    0000
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(59): error: Unrecognized instruction: "presentation"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(59): error: Unexpected: "presentation"
+59    0000                          "presentation"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(59): error: Unrecognized instruction: {
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(59): error: Unexpected: {
+59    0000                {
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(60): error: Unrecognized instruction: "echo"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(60): error: Unexpected: "echo"
+60    0000                              "echo"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(60): error: Unrecognized instruction: false,
+60    0000                false,
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(61): error: Unrecognized instruction: "reveal"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(61): error: Unexpected: "reveal"
+61    0000                              "reveal"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(61): error: Unrecognized instruction: "always",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(61): error: Unexpected: "always",
+61    0000                "always",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(62): error: Unrecognized instruction: "focus"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(62): error: Unexpected: "focus"
+62    0000                              "focus"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(62): error: Unrecognized instruction: true,
+62    0000                true,
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(63): error: Unrecognized instruction: "panel"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(63): error: Unexpected: "panel"
+63    0000                              "panel"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(63): error: Unrecognized instruction: "shared",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(63): error: Unexpected: "shared",
+63    0000                "shared",
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(64): error: Unrecognized instruction: "showReuseMessage"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(64): error: Unexpected: "showReuseMessage"
+64    0000                              "showReuseMessage"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(64): error: Unrecognized instruction: true,
+64    0000                true,
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(65): error: Unrecognized instruction: "clear"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(65): error: Unexpected: "clear"
+65    0000                              "clear"
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(65): error: Unrecognized instruction: true
+65    0000                true
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(66): error: Unrecognized instruction: }
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(66): error: Unexpected: }
+66    0000                          }
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(67): error: Unrecognized instruction: },
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(67): error: Unexpected: },
+67    0000                      },
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(68): error: Unrecognized instruction: ],
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(68): error: Unexpected: ],
+68    0000                  ],
+l:\vz-dis-roms\vtech12\.vscode\tasks.json(69): error: Invalid labelname: }
+69    0000              }
+# file closed: l:\vz-dis-roms\vtech12\.vscode\tasks.json

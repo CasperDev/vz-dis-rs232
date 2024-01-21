@@ -1,0 +1,19 @@
+{
+    "targetName": "RS232v1.6",
+    "targetType": "VZR0", // Binary content with Loading Header
+    
+    //"romFile" : "L:\\vz-roms\\1.2\\vtech12.rom",
+    "includePath" : "L:\\Asm\\include",
+
+    "sjasmplus": "L:\\tools\\sjasmplus\\sjasmplus.exe",
+	"z80-instruction-set.z80Link": "L:\\Books\\Z80\\Z80CPU.pdf",
+	"editor.fontVariations": false,
+	"debug.console.fontSize": 12,
+	"scm.inputFontSize": 11,
+	"terminal.integrated.fontSize": 12,
+	"chat.editor.fontSize": 12,
+	"markdown.preview.fontSize": 12,
+	"restructuredtext.preview.fontSize": 12,
+	"markdown.preview.lineHeight": 1.3,
+	"restructuredtext.preview.lineHeight": 1.3
+}

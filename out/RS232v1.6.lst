@@ -1,0 +1,867 @@
+# file opened: src/RS232v1.6.asm
+  1   0000              ; z80dasm 1.1.2
+  2   0000              ; command line: z80dasm --address --labels --source --origin=0x4000 --output=src/RS232v1.6.asm bin/RS232v1.6.bin
+  3   0000
+  4   0000              ;**********************************************************************
+  5   0000              ; Used System Routines/Hardware
+  6   0000              ;----------------------------------------------------------------------
+  7   0000
+  8   0000              GetPrtStatus		equ		$05c4						; Get Printer status
+  9   0000              SendToPrinter		equ		$058d						; Send char to printer
+ 10   0000              SendCRToPrt			equ		$3ae2						; Send CR to printer
+ 11   0000              PlayBeep			equ		$3450						; Play beep sound
+ 12   0000              VZLATCH				equ		$6800
+ 13   0000              SCREEN				equ		$7000						; Screen memory
+ 14   0000
+ 15   0000
+ 16   0000              ;**********************************************************************
+ 17   0000              ; Custom RS232 Hardware
+ 18   0000              ;----------------------------------------------------------------------
+ 19   0000
+ 20   0000              RSINPUT				equ		$5000						; Serial input
+ 21   0000              RSOUTPUT			equ		$5800						; Serial output
+ 22   0000
+ 23   0000
+ 24   0000              ;**********************************************************************
+ 25   0000              ; ROM MAGIC
+ 26   0000              ;----------------------------------------------------------------------
+ 27   0000
+ 28   0000              	org		$4000
+ 29   4000 AA 55 E7 18  	defb 	$aa,$55,$e7,$18
+ 30   4004
+ 31   4004              ;**********************************************************************
+ 32   4004              ; Initialization
+ 33   4004              ;----------------------------------------------------------------------
+ 34   4004 C3 84 41     	jp	INIT				; start initialization							;4004	c3 84 41 	. .
+ 35   4007
+ 36   4007              ;**********************************************************************
+ 37   4007              ; Texts
+ 38   4007              ;----------------------------------------------------------------------
+ 39   4007
+ 40   4007              TxtOn:
+ 41   4007 4F 4E 20     	db	"ON "									; text						;4007	4f 4e 20  	F
+ 42   400A              TxtOff:
+ 43   400A 4F 46 46     	db	"OFF"									; text						;400a	4f 46 46 	F "
+ 44   400D              TxtFull:
+ 45   400D 46 55 4C 4C  	db	"FULL"									; text						;400d	46 55 4c 4c 	L
+ 46   4011              TxtHalf:
+ 47   4011 48 41 4C 46  	db 	"HALF"									; text						;4011	48 41 4c 46 	F
+ 48   4015              TxtMenu:
+ 49   4015 0C           	db	$0c										; Clear screen char			;4015	0c 	.
+ 50   4016 56 5A 2D 32  	db 	"VZ-200/300 RS-232 - VERSION 1.6",$d								;4016	56 5a 2d 32 30 30 2f 33 30 30 20 52 53 2d 32 33 32 20 2d 20 56 45 52 53 49 4f 4e 20 31 2e 36 0d 	.
+ 50   401A 30 30 2F 33
+ 50   401E 30 30 20 52
+ 50   4022 53 2D 32 33
+ 50   4026 32 20 2D 20
+ 50   402A 56 45 52 53
+ 50   402E 49 4F 4E 20
+ 50   4032 31 2E 36 0D
+ 51   4036 28 43 29 20  	db 	"(C) 1987 DICK SMITH ELECTRONICS",$d								;4036	28 43 29 20 31 39 38 37 20 44 49 43 4b 20 53 4d 49 54 48 20 45 4c 45 43 54 52 4f 4e 49 43 53 0d 	.
+ 51   403A 31 39 38 37
+ 51   403E 20 44 49 43
+ 51   4042 4B 20 53 4D
+ 51   4046 49 54 48 20
+ 51   404A 45 4C 45 43
+ 51   404E 54 52 4F 4E
+ 51   4052 49 43 53 0D
+ 52   4056 2D 2D 2D 2D  	db 	"-------------------------------",$d								;4056	2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 0d 	.
+ 52   405A 2D 2D 2D 2D
+ 52   405E 2D 2D 2D 2D
+ 52   4062 2D 2D 2D 2D
+ 52   4066 2D 2D 2D 2D
+ 52   406A 2D 2D 2D 2D
+ 52   406E 2D 2D 2D 2D
+ 52   4072 2D 2D 2D 0D
+ 53   4076 30 5D 20 45  	db	"0] ENTER TERMINAL",$d												;4076	30 5d 20 45 4e 54 45 52 20 54 45 52 4d 49 4e 41 4c 0d 	.
+ 53   407A 4E 54 45 52
+ 53   407E 20 54 45 52
+ 53   4082 4D 49 4E 41
+ 53   4086 4C 0D
+ 54   4088 31 5D 20 46  	db 	"1] FULL/HALF DUPLEX:",0											;4088	31 5d 20 46 55 4c 4c 2f 48 41 4c 46 20 44 55 50 4c 45 58 3a 00	X
+ 54   408C 55 4C 4C 2F
+ 54   4090 48 41 4C 46
+ 54   4094 20 44 55 50
+ 54   4098 4C 45 58 3A
+ 54   409C 00
+ 55   409D              TxtConfig:
+ 56   409D 46 55 4C 4C  	db 	"FULL",$d															;409d	46 55 4c 4c 0d 	.
+ 56   40A1 0D
+ 57   40A2 32 5D 20 54  	db	"2] TOGGLE PRINTER  :OFF",$d										;40a2	32 5d 20 54 4f 47 47 4c 45 20 50 52 49 4e 54 45 52 20 20 3a 4f 46 46 0d 	.
+ 57   40A6 4F 47 47 4C
+ 57   40AA 45 20 50 52
+ 57   40AE 49 4E 54 45
+ 57   40B2 52 20 20 3A
+ 57   40B6 4F 46 46 0D
+ 58   40BA 33 5D 20 53  	db	"3] SET # DATA BITS :8  ",$d										;40ba	33 5d 20 53 45 54 20 23 20 44 41 54 41 20 42 49 54 53 20 3a 38 20 20 0d 	  .
+ 58   40BE 45 54 20 23
+ 58   40C2 20 44 41 54
+ 58   40C6 41 20 42 49
+ 58   40CA 54 53 20 3A
+ 58   40CE 38 20 20 0D
+ 59   40D2 34 5D 20 53  	db	"4] SET # STOP BITS :1  ",$d										;40d2	34 5d 20 53 45 54 20 23 20 53 54 4f 50 20 42 49 54 53 20 3a 31 20 20 0d 	.
+ 59   40D6 45 54 20 23
+ 59   40DA 20 53 54 4F
+ 59   40DE 50 20 42 49
+ 59   40E2 54 53 20 3A
+ 59   40E6 31 20 20 0D
+ 60   40EA 35 5D 20 53  	db	"5] SET PARITY      :N  ",$d										;40ea	35 5d 20 53 45 54 20 50 41 52 49 54 59 20 20 20 20 20 20 3a 4e 20 20 0d 	  .
+ 60   40EE 45 54 20 50
+ 60   40F2 41 52 49 54
+ 60   40F6 59 20 20 20
+ 60   40FA 20 20 20 3A
+ 60   40FE 4E 20 20 0D
+ 61   4102 36 5D 20 41  	db	"6] ADD LF TO CR    :OFF",$d										;4102	36 5d 20 41 44 44 20 4c 46 20 54 4f 20 43 52 20 20 20 20 3a 4f 46 46 0d 	.
+ 61   4106 44 44 20 4C
+ 61   410A 46 20 54 4F
+ 61   410E 20 43 52 20
+ 61   4112 20 20 20 3A
+ 61   4116 4F 46 46 0D
+ 62   411A 0D           	db	$d																	;411a	0d 	.
+ 63   411B 2A 2A 2A 2A  	db	"******* WHEN IN TERMINAL ********  "								;411b	2a 2a 2a 2a 2a 2a 2a 20 57 48 45 4e 20 49 4e 20 54 45 52 4d 49 4e 41 4c 20 2a 2a 2a 2a 2a 2a 2a 2a 20 20
+ 63   411F 2A 2A 2A 20
+ 63   4123 57 48 45 4E
+ 63   4127 20 49 4E 20
+ 63   412B 54 45 52 4D
+ 63   412F 49 4E 41 4C
+ 63   4133 20 2A 2A 2A
+ 63   4137 2A 2A 2A 2A
+ 63   413B 2A 20 20
+ 64   413E 53 48 49 46  	db	"SHIFT - X TO EXIT TERMINAL  "										; 53 48 49 46 54 20 2d 20 58 20 54 4f 20 45 58 49 54 20 54 45 52 4d 49 4e 41 4c 20 20
+ 64   4142 54 20 2D 20
+ 64   4146 58 20 54 4F
+ 64   414A 20 45 58 49
+ 64   414E 54 20 54 45
+ 64   4152 52 4D 49 4E
+ 64   4156 41 4C 20 20
+ 65   415A 2A 2A 2A 2A  	db	"*********************************",0	 							;415a	2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 00 	.
+ 65   415E 2A 2A 2A 2A
+ 65   4162 2A 2A 2A 2A
+ 65   4166 2A 2A 2A 2A
+ 65   416A 2A 2A 2A 2A
+ 65   416E 2A 2A 2A 2A
+ 65   4172 2A 2A 2A 2A
+ 65   4176 2A 2A 2A 2A
+ 65   417A 2A 00
+ 66   417C 00 00 00 00  	db  0,0,0,0,0,0,0,0														;417c	00 00 00 00 00 	.
+ 66   4180 00 00 00 00
+ 67   4184
+ 68   4184              ;**********************************************************************
+ 69   4184              ; Program state Variables
+ 70   4184              ;----------------------------------------------------------------------
+ 71   4184
+ 72   4184              PRINTER			equ		$80df						; 0-Printer Off, 1-Printer On
+ 73   4184              DUPLEX 			equ		$80e0						; 0-FullDuplex, 1-HalfDuplex
+ 74   4184              APPENDLF		equ		$80e1						; 0-dont add, 1-add LF after CR
+ 75   4184              LASTKEY			equ		$80e2						; last key pressed
+ 76   4184              KEYFLAGS		equ		$80e3						; bit 1: SHIFT, bit 2: CTRL
+ 77   4184              CURSORCOL		equ		$80e4
+ 78   4184              CURSORADR		equ		$80e5
+ 79   4184              OffScreen		equ		$8000
+ 80   4184              ScrDUPLEX		equ		OffScreen+0
+ 81   4184              ScrPrinter		equ		OffScreen+25
+ 82   4184              ScrDataBits		equ		OffScreen+49
+ 83   4184              ScrStopBits		equ		OffScreen+73
+ 84   4184              ScrParity		equ		OffScreen+97
+ 85   4184              ScrAppendLF		equ		OffScreen+121
+ 86   4184
+ 87   4184
+ 88   4184              ;**********************************************************************
+ 89   4184              ; Program Code
+ 90   4184              ;----------------------------------------------------------------------
+ 91   4184              INIT:
+ 92   4184 F3           	di						; disble interrupts								;4184	f3 	.
+ 93   4185 31 00 90     	ld sp,$9000				; safe top memory								;4185	31 00 90 	1 . .
+ 94   4188              ; -- copy screen data with changing settings to writeable memory 8000 .. 80e6
+ 95   4188              ;    from addresses 409d .. 4183
+ 96   4188 21 9D 40     	ld hl,TxtConfig			; src - address to copy from					;4188	21 9d 40 	! . @
+ 97   418B 11 00 80     	ld de,OffScreen			; dst - address to copy  to						;418b	11 00 80 	. . .
+ 98   418E 01 E7 00     	ld bc,231				; 231 bytes to copy								;418e	01 e7 00 	. . .
+ 99   4191 ED B0        	ldir					; copy config texts								;4191	ed b0 	. .
+100   4193
+101   4193              MenuLoop:
+102   4193 3A E1 80     	ld a,(APPENDLF)			; a - current value APPENDLF 					;4193	3a e1 80 	: . .
+103   4196 F5           	push af					; save current value							;4196	f5 	.
+104   4197 3E 01        	ld a,1					; a=1 - append LF after CR 						;4197	3e 01 	> .
+105   4199 32 E1 80     	ld (APPENDLF),a			; set temp value 								;4199	32 e1 80 	2 . .
+106   419C              ; -- display menu on Screen
+107   419C 21 15 40     	ld hl,TxtMenu			; 1st part of Menu Screen						;419c	21 15 40 	! . @
+108   419F CD 4D 43     	call PrintStr			; print on screen								;419f	cd 4d 43 	. M C
+109   41A2 21 00 80     	ld hl,OffScreen			; 2nd part of Menu								;41a2	21 00 80 	! . .
+110   41A5 CD 4D 43     	call PrintStr			; print on screen 								;41a5	cd 4d 43 	. M C
+111   41A8 F1           	pop af					; restore saved value 							;41a8	f1 	.
+112   41A9 32 E1 80     	ld (APPENDLF),a			; restore saved APPENDLF value 					;41a9	32 e1 80 	2 . .
+113   41AC CD 50 34     	call PlayBeep			; Play short beep sound							;41ac	cd 50 34 	. P 4
+114   41AF 21 93 41     	ld hl,MenuLoop			; address of code to return 					;41af	21 93 41 	! . A
+115   41B2 E5           	push hl					; set as return address							;41b2	e5 	.
+116   41B3              WaitMenuKey:
+117   41B3 CD 66 44     	call GetKeyPress		; get key pressed								;41b3	cd 66 44 	. f D
+118   41B6 B7           	or a					; any key pressed?								;41b6	b7 	.
+119   41B7 28 FA        	jr z,WaitMenuKey		; no - wait for key pressed	---------------		;41b7	28 fa 	( .
+120   41B9 D6 30        	sub '0'					; is it < '0' ?									;41b9	d6 30 	. 0
+121   41BB 38 F6        	jr c,WaitMenuKey		; yes - wrong, wait for other key pressed		;41bb	38 f6 	8 .
+122   41BD FE 07        	cp 7					; is it > '7' ?									;41bd	fe 07 	. .
+123   41BF 30 F2        	jr nc,WaitMenuKey		; yes - wrong, wait for other key pressed		;41bf	30 f2 	0 .
+124   41C1 21 CE 41     	ld hl,ActionsPtrs		; table with pointers to routines 0...7			;41c1	21 ce 41 	! . A
+125   41C4 87           	add a,a					; a = a*2 (addresses are 16bit)					;41c4	87 	.
+126   41C5 5F           	ld e,a					; e - offset in Actions Table					;41c5	5f 	_
+127   41C6 16 00        	ld d,0					; de - offset in Actions table					;41c6	16 00 	. .
+128   41C8 19           	add hl,de				; hl - address of pointer to Action 			;41c8	19 	.
+129   41C9 5E           	ld e,(hl)				; e - LSB of address							;41c9	5e 	^
+130   41CA 23           	inc hl					; hl points to MSB								;41ca	23 	#
+131   41CB 56           	ld d,(hl)				; de - address of routine						;41cb	56 	V
+132   41CC EB           	ex de,hl				; hl - address of routine						;41cc	eb 	.
+133   41CD E9           	jp (hl)					; execute routine 								;41cd	e9 	.
+134   41CE              ActionsPtrs:
+135   41CE 56 42        	dw 	EnterTerminal		; run Terminal mode								;41ce	56 42 	B
+136   41D0 DC 41        	dw 	FullHalfDuplex 		; switch beetween Half and Full Duplex			;41d0	dc 41 . A .
+137   41D2 F7 41        	dw 	PrinterOnOff		; toggle Printer on/Off							;41d2	f7 41 	A
+138   41D4 38 42        	dw	SetDataBitCount		; set number of data bits						;41d4	38 42 	8 B
+139   41D6 47 42        	dw	SetStopBitCount		; set  number of stop bits						;41d6	47 42 	B
+140   41D8 0B 42        	dw	SetParity 			; set Parity NONE/ODD/EVEN						;41d8	0b 42 	B
+141   41DA 01 42        	dw	SetAddLF2CR			; set if transmit LF after CR char 				;41da	01 42  	. B :
+142   41DC
+143   41DC
+144   41DC              FullHalfDuplex:
+145   41DC 3A E0 80     	ld a,(DUPLEX)			; current value of Full/Half duplex				;41dc	3a e0 80	.
+146   41DF B7           	or a					; is it now 0 									;41df	b7 	.
+147   41E0 3E 01        	ld a,1					; 1 = Half duplex								;41e0	3e 01 	> .
+148   41E2 21 11 40     	ld hl,TxtHalf			; hl - 'HALF' text								;41e2	21 11 40 	! . @
+149   41E5 28 04        	jr z,.setDuplex			; if 0 -> this will be Half Duplex				;41e5	28 04 	( .
+150   41E7 AF           	xor a					; 0 = Full Duplex								;41e7	af 	.
+151   41E8 21 0D 40     	ld hl,TxtFull			; hl - 'FULL' text								;41e8	21 0d 40 	! . @
+152   41EB              .setDuplex:
+153   41EB 32 E0 80     	ld (DUPLEX),a			; store new value 								;41eb	32 e0 80 	2 . .
+154   41EE 11 00 80     	ld de,ScrDUPLEX			; dst - Offscreen data							;41ee	11 00 80 	. . .
+155   41F1 01 04 00     	ld bc,4					; 4 chars to copy								;41f1	01 04 00 	. . .
+156   41F4 ED B0        	ldir					; copy 'HALF' or FULL to offscreen area			;41f4	ed b0 	. .
+157   41F6 C9           	ret						; ------------ End of Proc ----------------		;41f6	c9 	.
+158   41F7
+159   41F7              PrinterOnOff:
+160   41F7 21 DF 80     	ld hl,PRINTER			; Printer on/Off variable 						;41f7	21 df 80 	! . .
+161   41FA 11 19 80     	ld de,ScrPrinter		; destination where to print ON or OFF			;41fa	11 19 80 	. . .
+162   41FD CD 21 42     	call FlipOnOff			; flip value and print offscreen				;41fd	cd 21 42 	. ! B
+163   4200 C9           	ret						; ------------ End of Proc ----------------		;4200	c9 	.
+164   4201
+165   4201              SetAddLF2CR
+166   4201 21 E1 80     	ld hl,APPENDLF			; Add LF to CR variabale						;4201	21 e1 80 	! . .
+167   4204 11 79 80     	ld de,ScrAppendLF		; destination where to print ON or OFF			;4204	11 79 80 	. y .
+168   4207 CD 21 42     	call FlipOnOff			; flip value and print offscreen				;4207	cd 21 42 	. ! B
+169   420A C9           	ret						; ------------ End of Proc ----------------		;420a	c9 	.
+170   420B
+171   420B              SetParity
+172   420B 3A 61 80     	ld a,(ScrParity)		; char of Parity in offscreen buffer			;420b	3a 61 80 	: a .
+173   420E FE 4E        	cp 'N'					; is current parity = NONE						;420e	fe 4e 	. N
+174   4210 0E 45        	ld c,'E'				; change to EVEN								;4210	0e 45 	. E
+175   4212 28 08        	jr z,.setValue			; yes - set to EVEN ('E')						;4212	28 08 	( .
+176   4214 FE 45        	cp 'E'					; is current parity = EVEN						;4214	fe 45 	. E
+177   4216 0E 4F        	ld c,'O'				; change to ODD ('O')							;4216	0e 4f 	. O
+178   4218 28 02        	jr z,.setValue			; yes - set to ODD								;4218	28 02 	( .
+179   421A 0E 4E        	ld c,'N'				; change to NONE 								;421a	0e 4e 	. N
+180   421C              .setValue:
+181   421C 79           	ld a,c					; a - new Parity value							;421c	79 	y
+182   421D 32 61 80     	ld (ScrParity),a		; store new value								;421d	32 61 80 	2 a .
+183   4220 C9           	ret						; ------------ End of Proc ----------------		;4220	c9 	.
+184   4221
+185   4221
+186   4221              FlipOnOff:
+187   4221 7E           	ld a,(hl)				; a - on/off value 								;4221	7e 	~
+188   4222 B7           	or a					; is it 0 (off)?								;4222	b7 	.
+189   4223 3E 01        	ld a,1					; new Value = On								;4223	3e 01 	> .
+190   4225 28 01        	jr z,.setValue			; was off?										;4225	28 01 	( .
+191   4227 AF           	xor a					; new value = Off								;4227	af 	.
+192   4228              .setValue:
+193   4228 77           	ld (hl),a				; store new value								;4228	77 	w
+194   4229 21 0A 40     	ld hl,TxtOff			; hl - 'OFF' text								;4229	21 0a 40 	! . @
+195   422C B7           	or a					; is new value = 0 (Off)						;422c	b7 	.
+196   422D 28 03        	jr z,.print				; yes - print OFF								;422d	28 03 	( .
+197   422F 21 07 40     	ld hl,TxtOn				; hl - 'ON ' text								;422f	21 07 40 	! . @
+198   4232              .print:
+199   4232 01 03 00     	ld bc,3					; 3 chars of text								;4232	01 03 00 	. . .
+200   4235 ED B0        	ldir					; display offscreen								;4235	ed b0 	. .
+201   4237 C9           	ret						; ----------- End of Proc -----------------		;4237	c9 	.
+202   4238
+203   4238              SetDataBitCount
+204   4238 3A 31 80     	ld a,(ScrDataBits)		; a - current data bits count					;4238	3a 31 80 	: 1 .
+205   423B FE 37        	cp '7'					; is it 7 bits?									;423b	fe 37 	. 7
+206   423D 3E 38        	ld a,'8'				; change it to 8 bits							;423d	3e 38 	> 8
+207   423F 28 02        	jr z,.setValue			; yes - change it to 8 bits						;423f	28 02 	( .
+208   4241 3E 37        	ld a,'7'				; change it to 7 bits							;4241	3e 37 	> 7
+209   4243              .setValue:
+210   4243 32 31 80     	ld (ScrDataBits),a		; store new value								;4243	32 31 80 	2 1 .
+211   4246 C9           	ret						; ----------- End of Proc -----------------		;4246	c9 	.
+212   4247
+213   4247              SetStopBitCount
+214   4247 3A 49 80     	ld a,(ScrStopBits)		; a - current stop bits count					;4247	3a 49 80 	: I .
+215   424A FE 31        	cp '1'					; is it 1 stop bit?								;424a	fe 31 	. 1
+216   424C 3E 32        	ld a,'2'				; change it to 2 stop bits						;424c	3e 32 	> 2
+217   424E 28 02        	jr z,l4252h				; yes - change it to '2'						;424e	28 02 	( .
+218   4250 3E 31        	ld a,'1'				; change it to 1 stop bit						;4250	3e 31 	> 1
+219   4252              l4252h:
+220   4252 32 49 80     	ld (ScrStopBits),a		; store new value								;4252	32 49 80 	2 I .
+221   4255 C9           	ret						; ----------- End of Proc -----------------		;4255	c9 	.
+222   4256
+223   4256              EnterTerminal:
+224   4256 CD 56 43     	call ClearScreen		; clear screen 									;4256	cd 56 43 	. V C
+225   4259              TerminalLoop:
+226   4259 CD 1D 43     	call RSReadBit			; test if start bit found						;4259	cd 1d 43 	. . C
+227   425C 20 0E        	jr nz,.userInput		; no - skip reading RS byte						;425c	20 0e 	  .
+228   425E CD 8F 42     	call RSReadByte			; a - byte from serial							;425e	cd 8f 42 	. . B
+229   4261 CD 6E 43     	call PrintChrSafe		; print received char							;4261	cd 6e 43 	. n C
+230   4264 4F           	ld c,a					; save received char							;4264	4f 	O
+231   4265 3A DF 80     	ld a,(PRINTER)			; a - printer ON/Off settings					;4265	3a df 80 	: . .
+232   4268 B7           	or a					; is printer ON?								;4268	b7 	.
+233   4269 C4 53 44     	call nz,LPrintChr		; yes - send char to printer					;4269	c4 53 44 	. S D
+234   426C              .userInput:
+235   426C CD 66 44     	call GetKeyPress		; get pressed key								;426c	cd 66 44 	. f D
+236   426F B7           	or a					; any key pressed?								;426f	b7 	.
+237   4270 28 E7        	jr z,TerminalLoop		; no - try read next char from serial			;4270	28 e7 	( .
+238   4272 FE 65        	cp $65					; pressed SHIFT+X ?								;4272	fe 65 	. e
+239   4274 C8           	ret z					; yes - return to Menu Screen					;4274	c8 	.
+240   4275 F5           	push af					; save af (pressed char)						;4275	f5 	.
+241   4276 CD C6 42     	call RSWriteByte		; write char to Serial							;4276	cd c6 42 	. . B
+242   4279 F1           	pop af					; restire af (char)								;4279	f1 	.
+243   427A 4F           	ld c,a					; c - char sent									;427a	4f 	O
+244   427B 3A E0 80     	ld a,(DUPLEX)			; a - duplex settings							;427b	3a e0 80 	: . .
+245   427E B7           	or a					; is it Full Duplex?							;427e	b7 	.
+246   427F 79           	ld a,c					; a - char sent									;427f	79 	y
+247   4280 28 D7        	jr z,TerminalLoop		; yes, when Full Duplex then start over			;4280	28 d7 	( .
+248   4282 CD 6E 43     	call PrintChrSafe		; display char on screen						;4282	cd 6e 43 	. n C
+249   4285 4F           	ld c,a					; save char into c								;4285	4f 	O
+250   4286 3A DF 80     	ld a,(PRINTER)			; printer settings								;4286	3a df 80 	: . .
+251   4289 B7           	or a					; is PRINTER ON?								;4289	b7 	.
+252   428A C4 53 44     	call nz,LPrintChr		; yes - send char to printer					;428a	c4 53 44 	. S D
+253   428D 18 CA        	jr TerminalLoop			; start over									;428d	18 ca 	. .
+254   428F
+255   428F
+256   428F              ; Read byte from serial input
+257   428F              ; OUT: a - byte
+258   428F              RSReadByte:
+259   428F CD 2E 43     	call DelayHalfBit		; delay 1611 us (halfbit at 1200 baud)			;428f	cd 2e 43 	. . C
+260   4292 CD 23 43     	call DelayFullBit		; delay 3230 us (full bit at 1200 baud)			;4292	cd 23 43 	. # C
+261   4295 3A 31 80     	ld a,(ScrDataBits)		; a - number of data bits (ASCII char)			;4295	3a 31 80 	: 1 .
+262   4298 D6 30        	sub '0'					; a - number of data bits						;4298	d6 30 	. 0
+263   429A 5F           	ld e,a					; e - number of data bits						;429a	5f 	_
+264   429B 06 08        	ld b,8					; b - 8 bits to read (including stop)			;429b	06 08 	. .
+265   429D 0E 00        	ld c,0					; c - shift register							;429d	0e 00 	. .
+266   429F              .next:
+267   429F 78           	ld a,b					; a - bits to read								;429f	78 	x
+268   42A0 FE 01        	cp 1					; 1 left? (only stop bit to read)				;42a0	fe 01 	. .
+269   42A2 20 07        	jr nz,.readDataBit		; no - read data bit							;42a2	20 07 	  .
+270   42A4 7B           	ld a,e					; a - configured number of data bits			;42a4	7b 	{
+271   42A5 FE 08        	cp 8					; is it 8 bits?									;42a5	fe 08 	. .
+272   42A7 28 0E        	jr z,.nextBit			; yes - read 1 more bit of data					;42a7	28 0e 	( .
+273   42A9 18 0E        	jr .parityBit			; no - read parity or stop bit					;42a9	18 0e 	. .
+274   42AB              .readDataBit:
+275   42AB 3A 00 50     	ld a,(RSINPUT)			; data bit on bit7								;42ab	3a 00 50 	: . P
+276   42AE E6 80        	and %10000000			; only 7 bit is valid							;42ae	e6 80 	. .
+277   42B0 B1           	or c					; a - put it into shift register				;42b0	b1 	.
+278   42B1 4F           	ld c,a					; store back into c								;42b1	4f 	O
+279   42B2 CB 39        	srl c					; shift right c by 1 bit						;42b2	cb 39 	. 9
+280   42B4 CD 23 43     	call DelayFullBit		; delay 3230 us (full bit @ 1200 baud)			;42b4	cd 23 43 	. # C
+281   42B7              .nextBit:
+282   42B7 10 E6        	djnz .next				; read all 7 or 8 bits							;42b7	10 e6 	. .
+283   42B9              .parityBit:
+284   42B9 CD 3A 43     	call DelayHalfBit2		; delay 1564 us (almost half bit)				;42b9	cd 3a 43 	. : C
+285   42BC 3A 61 80     	ld a,(ScrParity)		; a - current Parity settings					;42bc	3a 61 80 	: a .
+286   42BF FE 4E        	cp 'N'					; is it NONE? (skip parity)						;42bf	fe 4e 	. N
+287   42C1 C4 23 43     	call nz,DelayFullBit	; delay 1 more bit (parity ODD/EVEN)			;42c1	c4 23 43 	. # C
+288   42C4 79           	ld a,c					; a - byte from serial completed				;42c4	79 	y
+289   42C5 C9           	ret						; -------------- End of Proc ----------			;42c5	c9 	.
+290   42C6
+291   42C6
+292   42C6
+293   42C6              RSWriteByte:
+294   42C6 F5           	push af					; save af										;42c6	f5 	.
+295   42C7 3E FF        	ld a,$ff				; all bits set to 1								;42c7	3e ff 	> .
+296   42C9 32 00 58     	ld (RSOUTPUT),a			; start bit										;42c9	32 00 58 	2 . X
+297   42CC CD 23 43     	call DelayFullBit		; delay 3230 us (full bit @ 1200 baud)			;42cc	cd 23 43 	. # C
+298   42CF 3A 31 80     	ld a,(ScrDataBits)		; a - number of data bits as ASCII				;42cf	3a 31 80 	: 1 .
+299   42D2 D6 30        	sub '0'					; a - number of data bits (7 or 8)				;42d2	d6 30 	. 0
+300   42D4 47           	ld b,a					; b - number of data bits						;42d4	47 	G
+301   42D5 F1           	pop af					; a - char to send								;42d5	f1 	.
+302   42D6 F5           	push af					; save af (char to send)						;42d6	f5 	.
+303   42D7 4F           	ld c,a					; c - shift register							;42d7	4f 	O
+304   42D8              .nextBit:
+305   42D8 CB 39        	srl c					; CY gets bit 0									;42d8	cb 39 	. 9
+306   42DA 3E 00        	ld a,0					; 0 if bit to send = 1							;42da	3e 00 	> .
+307   42DC 38 02        	jr c,.sendBit			; bit to send =1 ->  skip						;42dc	38 02 	8 .
+308   42DE 3E 80        	ld a,$80				; $80 if bit to send = 0						;42de	3e 80 	> .
+309   42E0              .sendBit:
+310   42E0 32 00 58     	ld (RSOUTPUT),a			; send bit to Serial							;42e0	32 00 58 	2 . X
+311   42E3 CD 23 43     	call DelayFullBit		; delay 3230 us (full bit @ 1200 baud)			;42e3	cd 23 43 	. # C
+312   42E6 10 F0        	djnz .nextBit			; send 7 or 8 bits of data						;42e6	10 f0 	. .
+313   42E8 F1           	pop af					; restora af (char to send) 					;42e8	f1 	.
+314   42E9 4F           	ld c,a					; c - char sent									;42e9	4f 	O
+315   42EA 3A 61 80     	ld a,(ScrParity)		; a - settings for Parity						;42ea	3a 61 80 	: a .
+316   42ED FE 4E        	cp 'N'					; is it NONE?									;42ed	fe 4e 	. N
+317   42EF 28 1C        	jr z,.sendStopBit		; yes - send stop bit							;42ef	28 1c 	( .
+318   42F1              ; -- Parity
+319   42F1 79           	ld a,c					; a - char 										;42f1	79 	y
+320   42F2 B7           	or a					; set CPU Parity flag							;42f2	b7 	.
+321   42F3 3A 61 80     	ld a,(ScrParity)		; a - Parity settings as ASCII					;42f3	3a 61 80 	: a .
+322   42F6 E2 03 43     	jp po,.parityOdd		; jump if parity is odd							;42f6	e2 03 43 	. . C
+323   42F9 FE 45        	cp 'E'					; settings is EVEN?								;42f9	fe 45 	. E
+324   42FB              .prepParity:
+325   42FB 3E 80        	ld a,$80				; parity bit = 0								;42fb	3e 80 	> .
+326   42FD 28 08        	jr z,.sendParityBit		; send 0 if settings and parity is EVEN 		;42fd	28 08 	( .
+327   42FF 3E 00        	ld a,$00				; parity bit = 1								;42ff	3e 00 	> .
+328   4301 18 04        	jr .sendParityBit		; send 1 coz settings is ODD 					;4301	18 04 	. .
+329   4303              .parityOdd:
+330   4303 FE 4F        	cp 'O'					; settings is ODD?								;4303	fe 4f 	. O
+331   4305 18 F4        	jr .prepParity			; prepare and send parity bit					;4305	18 f4 	. .
+332   4307              .sendParityBit:
+333   4307 32 00 58     	ld (RSOUTPUT),a			; send Parity bit								;4307	32 00 58 	2 . X
+334   430A CD 23 43     	call DelayFullBit		; delay 3230 us (full bit @ 1200 baud)			;430a	cd 23 43 	. # C
+335   430D              .sendStopBit:
+336   430D 3A 49 80     	ld a,(ScrStopBits)		; a - number of stop bits ASCII					;430d	3a 49 80 	: I .
+337   4310 D6 30        	sub '0'					; a - number of stop bits (1 or 2)				;4310	d6 30 	. 0
+338   4312 47           	ld b,a					; b - counter for stop bits 					;4312	47 	G
+339   4313              .loop:
+340   4313 AF           	xor a					; a = 0 -> Serial bit = 1						;4313	af 	.
+341   4314 32 00 58     	ld (RSOUTPUT),a			; send Stop bit									;4314	32 00 58 	2 . X
+342   4317 CD 23 43     	call DelayFullBit		; delay 3230 us (full bit @ 1200 baud)			;4317	cd 23 43 	. # C
+343   431A 10 F7        	djnz .loop				; repeat if 2 stop bits							;431a	10 f7 	. .
+344   431C C9           	ret						; ----------- End of Proc -------------			;431c	c9 	.
+345   431D
+346   431D              ; Read serial bit
+347   431D              ; Z=1 if RS line is
+348   431D              RSReadBit:
+349   431D 3A 00 50     	ld a,(RSINPUT)		; read RS232 line into bit 7						;431d	3a 00 50 	: . P
+350   4320 CB 7F        	bit 7,a				; is bit 7 set? (rs line is ???)					;4320	cb 7f 	. 
+351   4322 C9           	ret					; ----------- End of Proc -------------				;4322	c9 	.
+352   4323
+353   4323              DelayFullBit:
+354   4323 F5           	push af				; save af											;4323	f5 	.
+355   4324 C5           	push bc				; save bc											;4324	c5 	.
+356   4325 CD 2E 43     	call DelayHalfBit	; delay 1611 us (halbit)							;4325	cd 2e 43 	. . C
+357   4328 CD 2E 43     	call DelayHalfBit	; delay 1611 us (halbit)							;4328	cd 2e 43 	. . C
+358   432B C1           	pop bc				; restore bc										;432b	c1 	.
+359   432C F1           	pop af				; restore af										;432c	f1 	.
+360   432D C9           	ret					; ----------- End of Proc -------------				;432d	c9 	.
+361   432E
+362   432E
+363   432E              ; Delay 5767 ticks = 1611 us - half bit of 1200 baud
+364   432E              DelayHalfBit:									;17 & from call instruction
+365   432E C5           	push bc				; save bc											;432e	c5 	. 			11
+366   432F 3E 23        	ld a,35				; outer loop counter								;432f	3e 23 	> # 	7
+367   4331              .loop1:
+368   4331 06 0B        	ld b,11				; inner loop counter								;4331	06 0b 	. . 	7
+369   4333              .loop0:
+370   4333 10 FE        	djnz .loop0			; wait 10*13T + 8T = 138 cycles						;4333	10 fe 	. . 	10*13 + 8 = 138
+371   4335 3D           	dec a				; decrement outer loop counter						;4335	3d 	= 			4
+372   4336 20 F9        	jr nz,.loop1		; wait 												;4336	20 f9 	  	7+34*(7+7+138+4+12)
+373   4338 C1           	pop bc				; restore bc										;4338	c1 	. 			10
+374   4339 C9           	ret					; ----------- End of Proc -------------				;4339	c9 	. 				10
+375   433A
+376   433A
+377   433A              ; Delay 5600 ticks = 1564 us - litt;e less than half bit of 1200 baud
+378   433A              DelayHalfBit2:
+379   433A CD 2E 43     	call DelayHalfBit	; delay 1611 us (halbit)							;433a	cd 2e 43 	. . C
+380   433D C5           	push bc				; save bc											;433d	c5 	.
+381   433E 3E 22        	ld a,34				; outer loop counter								;433e	3e 22 	> "
+382   4340 18 EF        	jr DelayHalfBit.loop1	; continue delay								;4340	18 ef 	. .
+383   4342
+384   4342
+385   4342 F5           	push af			;4342	f5 	.
+386   4343 C5           	push bc			;4343	c5 	.
+387   4344 01 FF 4F     	ld bc,04fffh		;4344	01 ff 4f 	. . O
+388   4347 CD 60 00     	call 00060h		;4347	cd 60 00 	. ` .
+389   434A C1           	pop bc			;434a	c1 	.
+390   434B F1           	pop af			;434b	f1 	.
+391   434C C9           	ret			;434c	c9 	.
+392   434D
+393   434D              ;******************************************************************
+394   434D              ; Display null terminated string on Screen
+395   434D              ; IN: hl - null terminated string
+396   434D              ;------------------------------------------------------------------
+397   434D              PrintStr:
+398   434D 7E           	ld a,(hl)				; a - char to display or 0						;434d	7e 	~
+399   434E B7           	or a					; is it o? (end of string)						;434e	b7 	.
+400   434F C8           	ret z					; yes ---------- End of proc --------------		;434f	c8 	.
+401   4350 CD 6E 43     	call PrintChrSafe		; print char preserving all registers			;4350	cd 6e 43 	. n C
+402   4353 23           	inc hl					; address of next char to display or 0			;4353	23 	#
+403   4354 18 F7        	jr PrintStr				; continue with all chars						;4354	18 f7 	. .
+404   4356
+405   4356
+406   4356              ; -- Print $0c special char
+407   4356              ClearScreen:
+408   4356              ; -- set cursor at 0,0
+409   4356 21 00 70     	ld hl,SCREEN			; screen address for 1st char in 1st line 		;4356	21 00 70 	! . p
+410   4359 22 E5 80     	ld (CURSORADR),hl		; set cursor address							;4359	22 e5 80 	" . .
+411   435C              ; -- clear screen (fill with char $60 - inverted space)
+412   435C 11 01 70     	ld de,SCREEN+1			; dst - 2nd char of 1st line 					;435c	11 01 70 	. . p
+413   435F 01 FF 01     	ld bc,511				; 511 bytes to fill								;435f	01 ff 01 	. . .
+414   4362 36 60        	ld (hl),$60				; set fill char									;4362	36 60 	6 `
+415   4364 ED B0        	ldir					; fill screen with given char					;4364	ed b0 	. .
+416   4366              ; -- reset Sound and Gfx
+417   4366 AF           	xor a					; 0 - GfxMode=0,CSS=0, Sound=off				;4366	af 	.
+418   4367 32 E4 80     	ld (CURSORCOL),a		; cursor in line (column)						;4367	32 e4 80 	2 . .
+419   436A 32 00 68     	ld (VZLATCH),a			; GfxMode=0,CSS=0, Sound=off					;436a	32 00 68 	2 . h
+420   436D C9           	ret						; ------------ End of Proc ----------------		;436d	c9 	.
+421   436E
+422   436E
+423   436E              ;******************************************************************
+424   436E              ; Display char on Screen with preserving all registers
+425   436E              ; IN: a - char to display (including special chars)
+426   436E              ;------------------------------------------------------------------
+427   436E              PrintChrSafe:
+428   436E F5           	push af					; save af										;436e	f5 	.
+429   436F E5           	push hl					; save hl										;436f	e5 	.
+430   4370 C5           	push bc					; save bc										;4370	c5 	.
+431   4371 D5           	push de					; save de										;4371	d5 	.
+432   4372 CD 7A 43     	call PrintChr			; print char									;4372	cd 7a 43 	. z C
+433   4375 D1           	pop de					; restore de									;4375	d1 	.
+434   4376 C1           	pop bc					; restore bc									;4376	c1 	.
+435   4377 E1           	pop hl					; restore hl									;4377	e1 	.
+436   4378 F1           	pop af					; restore af									;4378	f1 	.
+437   4379 C9           	ret						; ------------ End of Proc ----------------		;4379	c9 	.
+438   437A
+439   437A
+440   437A              ;******************************************************************
+441   437A              ; Display char on Screen
+442   437A              ; IN: a - char to display (including special chars)
+443   437A              ;------------------------------------------------------------------
+444   437A              PrintChr:
+445   437A ED 5B E5 80  	ld de,(CURSORADR)		; de - cursor address							;437a	ed 5b e5 80 	. [ . .
+446   437E FE 0C        	cp $c					; is it CLS char?								;437e	fe 0c 	. .
+447   4380 28 D4        	jr z,ClearScreen		; yes - clear screen							;4380	28 d4 	( .
+448   4382 FE 0D        	cp $d					; is it CR char?								;4382	fe 0d 	. .
+449   4384 28 7E        	jr z,NewLine			; yes - NextLine								;4384	28 7e 	( ~
+450   4386 FE 08        	cp $8					; is it $8 (move left) char?					;4386	fe 08 	. .
+451   4388 28 35        	jr z,MoveCrsLeft		; yes - move cursor left						;4388	28 35 	( 5
+452   438A FE 09        	cp $9					; is it $9 (move right) char?					;438a	fe 09 	. .
+453   438C 28 16        	jr z,MoveCrsRight		; yes - move cursor right						;438c	28 16 	( .
+454   438E FE 0A        	cp $a					; is it $a (LineFeed) char						;438e	fe 0a 	. .
+455   4390 28 4A        	jr z,LineFeed			; yes - simulate line feed						;4390	28 4a 	( J
+456   4392 FE 07        	cp $7					; is it $7 (Bell) char?							;4392	fe 07 	. .
+457   4394 CA 50 34     	jp z,PlayBeep			; yes, play sound								;4394	ca 50 34 	. P 4
+458   4397 CB 7F        	bit 7,a					; is it char > 127? 							;4397	cb 7f 	. 
+459   4399 20 08        	jr nz,.toVidMem			; yes - just put into screen memory				;4399	20 08 	  .
+460   439B FE 20        	cp ' '					; is it < ' ' (other special char) ?			;439b	fe 20 	.
+461   439D F8           	ret m					; yes - ignore it -------------------------		;439d	f8 	.
+462   439E CD 5D 44     	call ConvToUpper		; convert to upper case letter					;439e	cd 5d 44 	. ] D
+463   43A1 CB F7        	set 6,a					; convert to screen code						;43a1	cb f7 	. .
+464   43A3              .toVidMem:
+465   43A3 12           	ld (de),a				; put char into video memory and move cursor	;43a3	12 	.
+466   43A4              MoveCrsRight:
+467   43A4 13           	inc de					; de - cursor address + 1						;43a4	13 	.
+468   43A5 ED 53 E5 80  	ld (CURSORADR),de		; set new cursor address						;43a5	ed 53 e5 80 	. S . .
+469   43A9 3A E4 80     	ld a,(CURSORCOL)		; a - cursor in line							;43a9	3a e4 80 	: . .
+470   43AC 3C           	inc a					; add 1 (move right)							;43ac	3c 	<
+471   43AD 32 E4 80     	ld (CURSORCOL),a		; set new cursor in line						;43ad	32 e4 80 	2 . .
+472   43B0 FE 20        	cp 32					; fall end of line?								;43b0	fe 20 	.
+473   43B2 F8           	ret m					; no - ----------- End of Proc ------------		;43b2	f8 	.
+474   43B3 CD F3 43     	call ForceNewLine		; add new line (regarding of settings)			;43b3	cd f3 43 	. . C
+475   43B6 3A DF 80     	ld a,(PRINTER)			; a - Printer settings							;43b6	3a df 80 	: . .
+476   43B9 B7           	or a					; is Printer ON?								;43b9	b7 	.
+477   43BA C8           	ret z					; no - ----------- End of Proc ------------		;43ba	c8 	.
+478   43BB CD 49 44     	call LPrintCR			; send CR to printer							;43bb	cd 49 44 	. I D
+479   43BE C9           	ret						; --------------- End of Procc ------------		;43be	c9 	.
+480   43BF
+481   43BF              ; print special char $8  (Left)
+482   43BF              MoveCrsLeft:
+483   43BF 3A E4 80     	ld a,(CURSORCOL)		; a - cursor in line position					;43bf	3a e4 80 	: . .
+484   43C2 B7           	or a					; is it 0 (start of line)?						;43c2	b7 	.
+485   43C3 28 0A        	jr z,.moveToPrev		; yes - ;43c3	28 0a 	( .
+486   43C5 3D           	dec a					; move 1 char left (decrement column)			;43c5	3d 	=
+487   43C6              .update:
+488   43C6 32 E4 80     	ld (CURSORCOL),a		; set new cursor in line index					;43c6	32 e4 80 	2 . .
+489   43C9 1B           	dec de					; decrement cursor address						;43c9	1b 	.
+490   43CA ED 53 E5 80  	ld (CURSORADR),de		; set new cursor address						;43ca	ed 53 e5 80 	. S . .
+491   43CE C9           	ret						; ----------- End of Proc -----------------		;43ce	c9 	.
+492   43CF
+493   43CF              ; -- cursor at start of line - try move to the end of previous line
+494   43CF              .moveToPrev:
+495   43CF E5           	push hl					; save hl										;43cf	e5 	.
+496   43D0 21 00 70     	ld hl,SCREEN			; hl - start of Screen							;43d0	21 00 70 	! . p
+497   43D3 B7           	or a					; clear carry flag								;43d3	b7 	.
+498   43D4 ED 52        	sbc hl,de				; if 0 - cursor is at start of 1st line 		;43d4	ed 52 	. R
+499   43D6 E1           	pop hl					; restore hl									;43d6	e1 	.
+500   43D7 C8           	ret z					; cannot move left - --- end of Proc ------		;43d7	c8 	.
+501   43D8 3E 1F        	ld a,31					; a - cursor at end of line						;43d8	3e 1f 	> .
+502   43DA 18 EA        	jr .update				; update new cursor position 					;43da	18 ea 	. .
+503   43DC
+504   43DC
+505   43DC              LineFeed:
+506   43DC 3A E4 80     	ld a,(CURSORCOL)		; a - cursor in line index						;43dc	3a e4 80 	: . .
+507   43DF 4F           	ld c,a					; c - cursor in line							;43df	4f 	O
+508   43E0 06 00        	ld b,0					; bc - cursor in line							;43e0	06 00 	. .
+509   43E2 C5           	push bc					; save bc 										;43e2	c5 	.
+510   43E3 CD F3 43     	call ForceNewLine		; print NewLine with LF (regardless settings)	;43e3	cd f3 43 	. . C
+511   43E6 C1           	pop bc					; restore bc (cursor in line)					;43e6	c1 	.
+512   43E7 EB           	ex de,hl				; hl - cursor address							;43e7	eb 	.
+513   43E8 09           	add hl,bc				; add cursor in line							;43e8	09 	.
+514   43E9 EB           	ex de,hl				; move back to de								;43e9	eb 	.
+515   43EA ED 53 E5 80  	ld (CURSORADR),de		; store new cursor address						;43ea	ed 53 e5 80 	. S . .
+516   43EE 79           	ld a,c					; a - cursor in line index						;43ee	79 	y
+517   43EF 32 E4 80     	ld (CURSORCOL),a		; store as new value							;43ef	32 e4 80 	2 . .
+518   43F2 C9           	ret						; ---------- End of Proc ----------------------	;43f2	c9 	.
+519   43F3              ForceNewLine:
+520   43F3 3A E1 80     	ld a,(APPENDLF)			; a - ADD LF TO CR settings						;43f3	3a e1 80 	: . .
+521   43F6 F5           	push af					; save af (settings)							;43f6	f5 	.
+522   43F7 3E 01        	ld a,1					; set ADD LF active								;43f7	3e 01 	> .
+523   43F9 32 E1 80     	ld (APPENDLF),a			; store as current value						;43f9	32 e1 80 	2 . .
+524   43FC CD 04 44     	call NewLine			; add new line									;43fc	cd 04 44 	. . D
+525   43FF F1           	pop af					; restore af (settings)							;43ff	f1 	.
+526   4400 32 E1 80     	ld (APPENDLF),a			; restore previous Add LF setting				;4400	32 e1 80 	2 . .
+527   4403 C9           	ret						; ---------- End of Proc ----------------------	;4403	c9 	.
+528   4404
+529   4404              ; print $d (CR) special character
+530   4404              NewLine:
+531   4404 E5           	push hl					; save hl										;4404	e5 	.
+532   4405 EB           	ex de,hl				; hl - cursor address 							;4405	eb 	.
+533   4406 3A E4 80     	ld a,(CURSORCOL)		; a - cursor in line index						;4406	3a e4 80 	: . .
+534   4409 5F           	ld e,a					; e - cursor in line							;4409	5f 	_
+535   440A 16 00        	ld d,0					; de - cursor in line 							;440a	16 00 	. .
+536   440C B7           	or a					; clear carry flag								;440c	b7 	.
+537   440D ED 52        	sbc hl,de				; hl - start of current line					;440d	ed 52 	. R
+538   440F 3A E1 80     	ld a,(APPENDLF)			; a - Add LF to CR settings						;440f	3a e1 80 	: . .
+539   4412 B7           	or a					; is append set?								;4412	b7 	.
+540   4413 28 04        	jr z,.skip				; no, skip adding 1 line						;4413	28 04 	( .
+541   4415 11 20 00     	ld de,32				; 32 chars = 1 line								;4415	11 20 00 	.   .
+542   4418 19           	add hl,de				; hl - start of next line						;4418	19 	.
+543   4419              .skip:
+544   4419 EB           	ex de,hl				; de - start of next line						;4419	eb 	.
+545   441A 21 00 72     	ld hl,SCREEN+512		; hl - last byte of screen + 1					;441a	21 00 72 	! . r
+546   441D B7           	or a					; clear carry flag								;441d	b7 	.
+547   441E ED 52        	sbc hl,de				; if 0 - next line is outside of screent 		;441e	ed 52 	. R
+548   4420 28 0A        	jr z,ScrollScreenUp		; yes - sroll screen up							;4420	28 0a 	( .
+549   4422
+550   4422              SetNewCursorPos:
+551   4422 ED 53 E5 80  	ld (CURSORADR),de		; set new cursor address						;4422	ed 53 e5 80 	. S . .
+552   4426 AF           	xor a					; column 0										;4426	af 	.
+553   4427 32 E4 80     	ld (CURSORCOL),a		; set new cursor in line						;4427	32 e4 80 	2 . .
+554   442A E1           	pop hl					; restore hl									;442a	e1 	.
+555   442B C9           	ret						; -------------- End of Proc ------------------	;442b	c9 	.
+556   442C
+557   442C
+558   442C              ScrollScreenUp:
+559   442C              ; -- move screen 1 line up
+560   442C 21 20 70     	ld hl,SCREEN+32		; src - 2nd line of screen							;442c	21 20 70 	!   p
+561   442F 11 00 70     	ld de,SCREEN		; dst - 1st line of screen							;442f	11 00 70 	. . p
+562   4432 01 E0 01     	ld bc,480			; 32 * 15 lines to copy 							;4432	01 e0 01 	. . .
+563   4435 ED B0        	ldir				; move screen up 1 line								;4435	ed b0 	. .
+564   4437
+565   4437 21 E0 71     	ld hl,SCREEN+480	; src - last line of screen 						;4437	21 e0 71 	! . q
+566   443A 11 E1 71     	ld de,SCREEN+480+1	; dst - 2nd char of last line						;443a	11 e1 71 	. . q
+567   443D 01 1F 00     	ld bc,31			; 31 chars to fill									;443d	01 1f 00 	. . .
+568   4440 36 60        	ld (hl),$60			; store "'" char									;4440	36 60 	6 `
+569   4442 ED B0        	ldir				; fill last line 									;4442	ed b0 	. .
+570   4444 11 E0 71     	ld de,SCREEN+480	; last line of screen								;4444	11 e0 71 	. . q
+571   4447 18 D9        	jr SetNewCursorPos	; update cursor position							;4447	18 d9 	. .
+572   4449
+573   4449              LPrintCR:
+574   4449 CD C4 05     	call GetPrtStatus	; check Printer status 								;4449	cd c4 05 	. . .
+575   444C CB 47        	bit 0,a				; is ready?											;444c	cb 47 	. G
+576   444E C0           	ret nz				; no - return --------------------					;444e	c0 	.
+577   444F CD E2 3A     	call SendCRToPrt	; send CR/LF to Printer								;444f	cd e2 3a 	. . :
+578   4452 C9           	ret					; --------- End of Proc -----------					;4452	c9 	.
+579   4453
+580   4453              ; Send char to Printer
+581   4453              LPrintChr:
+582   4453 CD C4 05     	call GetPrtStatus	; check Printer status 								;4453	cd c4 05 	. . .
+583   4456 CB 47        	bit 0,a				; is ready?											;4456	cb 47 	. G
+584   4458 C0           	ret nz				; no - return --------------------					;4458	c0 	.
+585   4459 79           	ld a,c				; a - char to send to printer						;4459	79 	y
+586   445A C3 8D 05     	jp SendToPrinter	; send char to printer via system 					;445a	c3 8d 05 	. . .
+587   445D
+588   445D
+589   445D
+590   445D              ConvToUpper:
+591   445D FE 61        	cp 'a'				; is it >= 'a'?										;445d	fe 61 	. a
+592   445F D8           	ret c				; no ----------------------------------------------	;445f	d8 	.
+593   4460 FE 7B        	cp 'z'+1			; is it <= 'z'										;4460	fe 7b 	. {
+594   4462 D0           	ret nc				; no ----------------------------------------------	;4462	d0 	.
+595   4463 E6 5F        	and $5f				; convert to upper case								;4463	e6 5f 	. _
+596   4465 C9           	ret					; ------------ End of Proc ------------------------	;4465	c9 	.
+597   4466
+598   4466              ; Keyboard Skan
+599   4466              ; /---------------------------------------------------------------------\
+600   4466              ; |                         ADRES   |   D5  D4      D3  D2      D1  D0  |
+601   4466              ; |---------|-----------------------------------------------------------|
+602   4466              KEYS_ROW_0:         equ     68FEh   ;   R   Q       E           W   T   |
+603   4466              KEYS_ROW_1:         equ     68FDh   ;   F   A       D   CTRL    S   G   |
+604   4466              KEYS_ROW_2:         equ     68FBh   ;   V   Z       C   SHIFT   X   B   |
+605   4466              KEYS_ROW_3:         equ     68F7h   ;   4   1       3           2   5   |
+606   4466              KEYS_ROW_4:         equ     68EFh   ;   M   SPACE   ,           .   N   |
+607   4466              KEYS_ROW_5:         equ     68DFh   ;   7   0       8   -       9   6   |
+608   4466              KEYS_ROW_6:         equ     68BFh   ;   U   P       I   RETURN  O   Y   |
+609   4466              KEYS_ROW_7:         equ     687Fh   ;   J   ;       K   :       L   H   |
+610   4466              ; |---------|-----------------------------------------------------------|
+611   4466
+612   4466              GetKeyPress:
+613   4466 21 FE 68     	ld hl,KEYS_ROW_0		; activate row 0								;4466	21 fe 68 	! . h
+614   4469 0E 08        	ld c,8					; 8 rows to scan								;4469	0e 08 	. .
+615   446B              .nextRow:
+616   446B 06 06        	ld b,6					; 6 column to scan								;446b	06 06 	. .
+617   446D 7E           	ld a,(hl)				; read row 0 bits								;446d	7e 	~
+618   446E F6 04        	or %000100				; ignore D2 (CTRL,SHIFT, etc)					;446e	f6 04 	. .
+619   4470              .nextCol:
+620   4470 1F           	rra						; bit 0 to CY  									;4470	1f 	.
+621   4471 30 59        	jr nc,DecodeKey			; key pressed 									;4471	30 59 	0 Y
+622   4473 10 FB        	djnz .nextCol			; check next bit/column							;4473	10 fb 	. .
+623   4475              ; -- row tested - check next row
+624   4475 CB 05        	rlc l					; set next row active							;4475	cb 05 	. .
+625   4477 0D           	dec c					; all rows checked?								;4477	0d 	.
+626   4478 20 F1        	jr nz,.nextRow			; no - chceck next row							;4478	20 f1 	  .
+627   447A              ; -- check ignored D2 column - key '-'
+628   447A 06 04        	ld b,4					; predefined for column D2						;447a	06 04 	. .
+629   447C 21 DF 68     	ld hl,KEYS_ROW_5		; row with '-' key								;447c	21 df 68 	! . h
+630   447F 7E           	ld a,(hl)				; read keyboard									;447f	7e 	~
+631   4480 CB 57        	bit 2,a					; is '-' pressed?								;4480	cb 57 	. W
+632   4482 28 3E        	jr z,MinusPressed		; yes - set row (c=3) and decode				;4482	28 3e 	( >
+633   4484              ; -- check ignored D2 column - key RETURN
+634   4484 CB 05        	rlc l					; set next active row (with RETURN)				;4484	cb 05 	. .
+635   4486 7E           	ld a,(hl)				; read keyboard									;4486	7e 	~
+636   4487 CB 57        	bit 2,a					; is RETURN pressed?							;4487	cb 57 	. W
+637   4489 28 3B        	jr z,RETURNPressed		; yes - set row (c=2) and decode				;4489	28 3b 	( ;
+638   448B              ; -- check ignored D2 column - key ':'
+639   448B CB 05        	rlc l					; set next active row (with ':')				;448b	cb 05 	. .
+640   448D 7E           	ld a,(hl)				; read keyboard									;448d	7e 	~
+641   448E CB 57        	bit 2,a					; is ':' pressed?								;448e	cb 57 	. W
+642   4490 28 38        	jr z,ColonPressed		; yes - set row (c=1) and decode				;4490	28 38 	( 8
+643   4492              ; -- skip checking D2 column for row 0
+644   4492 CB 05        	rlc l					; set next active row 0							;4492	cb 05 	. .
+645   4494              ; -- check ignored D2 column - key CTRL
+646   4494 CB 05        	rlc l					; set next active row (with CTRL)				;4494	cb 05 	. .
+647   4496 7E           	ld a,(hl)				; read keyboard									;4496	7e 	~
+648   4497 CB 57        	bit 2,a					; is CTRL pressed?								;4497	cb 57 	. W
+649   4499 28 11        	jr z,.CTRLPressed		; yes - set CTRL pressed						;4499	28 11 	( .
+650   449B              ; -- check ignored D2 column - key CTRL
+651   449B CB 05        	rlc l					; set next active row (with SHIFT)				;449b	cb 05 	. .
+652   449D 7E           	ld a,(hl)				; read keyboard									;449d	7e 	~
+653   449E CB 57        	bit 2,a					; is SHIFT pressed?								;449e	cb 57 	. W
+654   44A0 28 11        	jr z,.SHIFTPressed		; yes -set SHIFT pressed						;44a0	28 11 	( .
+655   44A2              ; -- no key pressed
+656   44A2 3E FF        	ld a,-1					; no key										;44a2	3e ff 	> .
+657   44A4 32 E2 80     	ld (LASTKEY),a			; save as last key pressed						;44a4	32 e2 80 	2 . .
+658   44A7 AF           	xor a					; no special keys pressed						;44a7	af 	.
+659   44A8 32 E3 80     	ld (KEYFLAGS),a			; clear key flags								;44a8	32 e3 80 	2 . .
+660   44AB C9           	ret						; -------- End of Proc (result 0) -				;44ab	c9 	.
+661   44AC
+662   44AC              ; CTRL pressed
+663   44AC              .CTRLPressed:
+664   44AC 3A E3 80     	ld a,(KEYFLAGS)			; a - current key flags							;44ac	3a e3 80 	: . .
+665   44AF CB D7        	set 2,a					; set bit 2 - CTRL key active					;44af	cb d7 	. .
+666   44B1 18 05        	jr .updateFlags			; set CTRL in KEYFLAGS							;44b1	18 05 	. .
+667   44B3              ; SHIFT pressed
+668   44B3              .SHIFTPressed:
+669   44B3 3A E3 80     	ld a,(KEYFLAGS)			; a - current key flags							;44b3	3a e3 80 	: . .
+670   44B6 CB CF        	set 1,a					; set bit 1 - SHIFT key active					;44b6	cb cf 	. .
+671   44B8              .updateFlags:
+672   44B8 32 E3 80     	ld (KEYFLAGS),a			; store new flags value							;44b8	32 e3 80 	2 . .
+673   44BB 3E FF        	ld a,-1					; no key										;44bb	3e ff 	> .
+674   44BD 32 E2 80     	ld (LASTKEY),a			; save -1 as last key pressed					;44bd	32 e2 80 	2 . .
+675   44C0              ExitNoKey:
+676   44C0 AF           	xor a					; 0 - no key pressed							;44c0	af 	.
+677   44C1 C9           	ret						; -------- End of Proc (result 0) -				;44c1	c9 	.
+678   44C2
+679   44C2              ; -- key '-' pressed
+680   44C2              MinusPressed:
+681   44C2 0E 03        	ld c,3					; predefined for row 5							;44c2	0e 03 	. .
+682   44C4 18 06        	jr DecodeKey			; decode key to ASCII							;44c4	18 06 	. .
+683   44C6              ; -- RETURN pressed
+684   44C6              RETURNPressed:
+685   44C6 0E 02        	ld c,2					; predefined for row 6							;44c6	0e 02 	. .
+686   44C8 18 02        	jr DecodeKey			; decode key to ASCII							;44c8	18 02 	. .
+687   44CA              ; -- key ':' pressed
+688   44CA              ColonPressed:
+689   44CA 0E 01        	ld c,1					; predefined for row 7							;44ca	0e 01 	. .
+690   44CC              DecodeKey:
+691   44CC 21 06 45     	ld hl,KeysTable			; hl - address of key to ASCII map table		;44cc	21 06 45 	! . E
+692   44CF 1E 00        	ld e,0					; extra offset in KeyTable = 0					;44cf	1e 00 	. .
+693   44D1 3A E3 80     	ld a,(KEYFLAGS)			; a - active Key Flags							;44d1	3a e3 80 	: . .
+694   44D4 CB 57        	bit 2,a					; is CTRL pressed?								;44d4	cb 57 	. W
+695   44D6 28 04        	jr z,.checkShift		; no - check SHIFT key							;44d6	28 04 	( .
+696   44D8 1E 60        	ld e,$60				; add $60 offset								;44d8	1e 60 	. `
+697   44DA 18 06        	jr LookupKey			; cals final offset and get char from map		;44da	18 06 	. .
+698   44DC              .checkShift:
+699   44DC CB 4F        	bit 1,a					; is SHIFT pressed								;44dc	cb 4f 	. O
+700   44DE 28 02        	jr z,LookupKey			; no - skip adding offset						;44de	28 02 	( .
+701   44E0 1E 30        	ld e,$30				; add $30 offset								;44e0	1e 30 	. 0
+702   44E2              LookupKey:
+703   44E2 3E 08        	ld a,8					; calculate row as 8 minus row					;44e2	3e 08 	> .
+704   44E4 91           	sub c					; a - row number								;44e4	91 	.
+705   44E5 4F           	ld c,a					; store back to c								;44e5	4f 	O
+706   44E6 3E 06        	ld a,6					; calculate column as 6 - column				;44e6	3e 06 	> .
+707   44E8 90           	sub b					; a - column number								;44e8	90 	.
+708   44E9 47           	ld b,a					; store back to b								;44e9	47 	G
+709   44EA CD FB 44     	call CalcIndex			; calculate index from b and c					;44ea	cd fb 44 	. . D
+710   44ED 83           	add a,e					; add offset for SHIFT and/or CTRL				;44ed	83 	.
+711   44EE 06 00        	ld b,0					; MSB of index to lookup table					;44ee	06 00 	. .
+712   44F0 4F           	ld c,a					; bc - index									;44f0	4f 	O
+713   44F1 09           	add hl,bc				; hl - address in table							;44f1	09 	.
+714   44F2 7E           	ld a,(hl)				; a - ASCII key									;44f2	7e 	~
+715   44F3 21 E2 80     	ld hl,LASTKEY			; hl - variable LASTKEY							;44f3	21 e2 80 	! . .
+716   44F6 BE           	cp (hl)					; the same as last one?							;44f6	be 	.
+717   44F7 28 C7        	jr z,ExitNoKey			; yes - return no key pressed					;44f7	28 c7 	( .
+718   44F9 77           	ld (hl),a				; store key as last pressed						;44f9	77 	w
+719   44FA C9           	ret						; --------- End of Proc -------					;44fa	c9 	.
+720   44FB
+721   44FB              CalcIndex:
+722   44FB AF           	xor a					; a - result									;44fb	af 	.
+723   44FC B9           	cp c					; is row = 0?									;44fc	b9 	.
+724   44FD 28 05        	jr z,l4504h				; yes - just add columns						;44fd	28 05 	( .
+725   44FF              .add6perCol:
+726   44FF C6 06        	add a,6					; add 6 columns per row							;44ff	c6 06 	. .
+727   4501 0D           	dec c					; all coumns counted?							;4501	0d 	.
+728   4502 20 FB        	jr nz,.add6perCol		; no - keep adding								;4502	20 fb 	  .
+729   4504              l4504h:
+730   4504 80           	add a,b					; add column									;4504	80 	.
+731   4505 C9           	ret						; -------- End of Proc -------- 				;4505	c9 	.
+732   4506
+733   4506              KeysTable:
+734   4506 54 57 20 45  	db	'T','W',' ','E','Q','R' 						; row 0				;4506	54 57 20 45 51 52 	R
+734   450A 51 52
+735   450C 47 53 20 44  	db 	'G','S',' ','D','A','F'							; row 1				;450c	47 53 20 44 41 46 	F
+735   4510 41 46
+736   4512 42 58 20 43  	db	'B','X',' ','C','Z','V'							; row 2				;4512	42 58 20 43 5a 56 	V
+736   4516 5A 56
+737   4518 35 32 20 33  	db	'5','2',' ','3','1','4'							; row 3				;4518	35 32 20 33 31 34 	1 4
+737   451C 31 34
+738   451E 4E 2E 20 2C  	db	'N','.',' ',',',' ','M' 						; row 4				;451e	4e 2e 20 2c 20 4d 	  M
+738   4522 20 4D
+739   4524 36 39 2D 38  	db 	'6','9','-','8','0','7'							; row 5				;4524	36 39 2d 38 30 37 	7
+739   4528 30 37
+740   452A 59 4F 0D 49  	db	'Y','O',$0d,'I','P','U' 						; row 6				;452a	59 4f 0d 49 50 55 	U
+740   452E 50 55
+741   4530 48 4C 3A 4B  	db	'H','L',':','K',';','J' 						; row 7				;4530	48 4c 3a 4b 3b 4a 	J
+741   4534 3B 4A
+742   4536              ; -- with SHIFT
+743   4536 00 00 00 00  	db	0,0,0,0,0,0										; row 0				;4536	00 00 00 00 00 00 	.
+743   453A 00 00
+744   453C 00 00 00 00  	db	0,0,0,0,0,0										; row 1				;453c	00 00 00 00 00 00 	.
+744   4540 00 00
+745   4542 00 65 00 00  	db	0,$65,0,0,0,0									; row 2 (SHIFT+X)	;4542	00 65 00 00 00 00 	.
+745   4546 00 00
+746   4548 25 22 20 23  	db	'%','"',' ','#','!','$' 						; row 3				;4548	25 22 20 23 21 24  	! $
+746   454C 21 24
+747   454E 5E 3E 00 3C  	db	'^','>',$00,'<',$00,$5c 						; row 4				;454e	5e 3e 00 3c 00 5c 	\
+747   4552 00 5C
+748   4554 26 29 3D 28  	db	'&',')','=','(','@',$27							; row 5				;4554	26 29 3d 28 40 27 	'
+748   4558 40 27
+749   455A 00 5B 0D 00  	db 	$00,'[',$0d,$00,']',$00							; row 6				;455a	00 5b 0d 00 5d 00 	.
+749   455E 5D 00
+750   4560 00 3F 2A 2F  	db	$00,'?','*','/','+',$00							; row 7				;4560	00 3f 2a 2f 2b 00 	.
+750   4564 2B 00
+751   4566              ; -- with CTRL
+752   4566 14 17 00 05  	db	$14,$17,$00,$05,$11,$12 						; row 0				;4566	14 17 00 05 11 12 	. . .
+752   456A 11 12
+753   456C 07 13 00 00  	db	$07,$13,$00,$00,$01,$06							; row 1				;456c	07 13 00 00 01 06  	. . .
+753   4570 01 06
+754   4572 02 16 00 03  	db	$02,$16,$00,$03,$1a,$16 						; row 2				;4572	02 16 00 03 1a 16  	. .
+754   4576 1A 16
+755   4578 00 00 00 00  	db 	$00,$00,$00,$00,$00,$00							; row 3				;4578	00 00 00 00 00 00 	.
+755   457C 00 00
+756   457E 0E 00 00 00  	db	$0e,$00,$00,$00,$00,$0d 						; row 4				;457e	0e 00 00 00 00 0d 	.
+756   4582 00 0D
+757   4584 00 00 00 00  	db 	$00,$00,$00,$00,$00,$00							; row 5				;4584	00 00 00 00 00 00 	.
+757   4588 00 00
+758   458A 19 0F 00 09  	db	$19,$0f,$00,$09,$10,$15 						; row 6				;458a	19 0f 00 09 10 15 	. .
+758   458E 10 15
+759   4590 08 0C 00 0B  	db	$08,$0c,$00,$0b,$00,$0a 						; row 7				;4590	08 0c 00 0b 00 0a 	.
+759   4594 00 0A
+760   4596
+761   4596 FF FF FF...  	BLOCK 618,$ff
+762   4800
+# file closed: src/RS232v1.6.asm
