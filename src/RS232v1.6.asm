@@ -256,8 +256,8 @@ TerminalLoop:
 ; Read byte from serial input 
 ; OUT: a - byte
 RSReadByte:
-	call DelayHalfBit		; delay 1611 us (halfbit at 1200 baud)			;428f	cd 2e 43 	. . C 
-	call DelayFullBit		; delay 3230 us (full bit at 1200 baud)			;4292	cd 23 43 	. # C 
+	call DelayHalfBit		; delay 1611 us (halfbit at 300 baud)			;428f	cd 2e 43 	. . C 
+	call DelayFullBit		; delay 3230 us (full bit at 300 baud)			;4292	cd 23 43 	. # C 
 	ld a,(ScrDataBits)		; a - number of data bits (ASCII char)			;4295	3a 31 80 	: 1 . 
 	sub '0'					; a - number of data bits						;4298	d6 30 	. 0 
 	ld e,a					; e - number of data bits						;429a	5f 	_ 
@@ -277,7 +277,7 @@ RSReadByte:
 	or c					; a - put it into shift register				;42b0	b1 	. 
 	ld c,a					; store back into c								;42b1	4f 	O 
 	srl c					; shift right c by 1 bit						;42b2	cb 39 	. 9 
-	call DelayFullBit		; delay 3230 us (full bit @ 1200 baud)			;42b4	cd 23 43 	. # C 
+	call DelayFullBit		; delay 3230 us (full bit @ 300 baud)			;42b4	cd 23 43 	. # C 
 .nextBit:
 	djnz .next				; read all 7 or 8 bits							;42b7	10 e6 	. . 
 .parityBit:
@@ -294,7 +294,7 @@ RSWriteByte:
 	push af					; save af										;42c6	f5 	. 
 	ld a,$ff				; all bits set to 1								;42c7	3e ff 	> . 
 	ld (RSOUTPUT),a			; start bit										;42c9	32 00 58 	2 . X 
-	call DelayFullBit		; delay 3230 us (full bit @ 1200 baud)			;42cc	cd 23 43 	. # C 
+	call DelayFullBit		; delay 3230 us (full bit @ 300 baud)			;42cc	cd 23 43 	. # C 
 	ld a,(ScrDataBits)		; a - number of data bits as ASCII				;42cf	3a 31 80 	: 1 . 
 	sub '0'					; a - number of data bits (7 or 8)				;42d2	d6 30 	. 0 
 	ld b,a					; b - number of data bits						;42d4	47 	G 
@@ -308,7 +308,7 @@ RSWriteByte:
 	ld a,$80				; $80 if bit to send = 0						;42de	3e 80 	> . 
 .sendBit:
 	ld (RSOUTPUT),a			; send bit to Serial							;42e0	32 00 58 	2 . X 
-	call DelayFullBit		; delay 3230 us (full bit @ 1200 baud)			;42e3	cd 23 43 	. # C 
+	call DelayFullBit		; delay 3230 us (full bit @ 300 baud)			;42e3	cd 23 43 	. # C 
 	djnz .nextBit			; send 7 or 8 bits of data						;42e6	10 f0 	. . 
 	pop af					; restora af (char to send) 					;42e8	f1 	. 
 	ld c,a					; c - char sent									;42e9	4f 	O 
@@ -331,7 +331,7 @@ RSWriteByte:
 	jr .prepParity			; prepare and send parity bit					;4305	18 f4 	. . 
 .sendParityBit:
 	ld (RSOUTPUT),a			; send Parity bit								;4307	32 00 58 	2 . X 
-	call DelayFullBit		; delay 3230 us (full bit @ 1200 baud)			;430a	cd 23 43 	. # C 
+	call DelayFullBit		; delay 3230 us (full bit @ 300 baud)			;430a	cd 23 43 	. # C 
 .sendStopBit:
 	ld a,(ScrStopBits)		; a - number of stop bits ASCII					;430d	3a 49 80 	: I . 
 	sub '0'					; a - number of stop bits (1 or 2)				;4310	d6 30 	. 0 
@@ -339,7 +339,7 @@ RSWriteByte:
 .loop:
 	xor a					; a = 0 -> Serial bit = 1						;4313	af 	. 
 	ld (RSOUTPUT),a			; send Stop bit									;4314	32 00 58 	2 . X 
-	call DelayFullBit		; delay 3230 us (full bit @ 1200 baud)			;4317	cd 23 43 	. # C 
+	call DelayFullBit		; delay 3230 us (full bit @ 300 baud)			;4317	cd 23 43 	. # C 
 	djnz .loop				; repeat if 2 stop bits							;431a	10 f7 	. . 
 	ret						; ----------- End of Proc -------------			;431c	c9 	. 
 
@@ -360,7 +360,7 @@ DelayFullBit:
 	ret					; ----------- End of Proc -------------				;432d	c9 	. 
 
 
-; Delay 5767 ticks = 1611 us - half bit of 1200 baud
+; Delay 5767 ticks = 1611 us - half bit of 300 baud
 DelayHalfBit:									;17 & from call instruction
 	push bc				; save bc											;432e	c5 	. 			11
 	ld a,35				; outer loop counter								;432f	3e 23 	> # 	7 
@@ -374,7 +374,7 @@ DelayHalfBit:									;17 & from call instruction
 	ret					; ----------- End of Proc -------------				;4339	c9 	. 				10
 
 
-; Delay 5600 ticks = 1564 us - litt;e less than half bit of 1200 baud
+; Delay 5600 ticks = 1564 us - litt;e less than half bit of 300 baud
 DelayHalfBit2:
 	call DelayHalfBit	; delay 1611 us (halbit)							;433a	cd 2e 43 	. . C 
 	push bc				; save bc											;433d	c5 	. 
