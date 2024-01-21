@@ -1,5 +1,5 @@
 {
-    "targetName": "RS232v1.6",
+    "targetName": "RS232v1.5",
     "targetType": "VZR0", // Binary content with Loading Header
     
     //"romFile" : "L:\\vz-roms\\1.2\\vtech12.rom",

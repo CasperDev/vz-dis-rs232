@@ -214,9 +214,9 @@ SetStopBitCount
 	ld a,(ScrStopBits)		; a - current stop bits count					;4247	3a 49 80 	: I . 
 	cp '1'					; is it 1 stop bit?								;424a	fe 31 	. 1 
 	ld a,'2'				; change it to 2 stop bits						;424c	3e 32 	> 2 
-	jr z,l4252h				; yes - change it to '2'						;424e	28 02 	( . 
+	jr z,ssb2				; yes - change it to '2'						;424e	28 02 	( . 
 	ld a,'1'				; change it to 1 stop bit						;4250	3e 31 	> 1 
-l4252h:
+ssb2:
 	ld (ScrStopBits),a		; store new value								;4252	32 49 80 	2 I . 
 	ret						; ----------- End of Proc -----------------		;4255	c9 	. 
 

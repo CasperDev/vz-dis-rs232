@@ -1,0 +1,853 @@
+# file opened: src/RS232v1.5.asm
+  1   0000              ; title VZ-200/300 RS-232 terminal rom software
+  2   0000              ; subttl Version l .5 last revised 11th June 1985 at 2am in the morning
+  3   0000              ;
+  4   0000              ; VZ-200/300 RS-232/TERMINAL cartridge pack
+  5   0000              ;
+  6   0000              ; This source code and the ROM program it generates is copyright (c) 1985
+  7   0000              ; by Dick Smith Electronics Pty Ltd and may not be used for any commercial
+  8   0000              ; gain in any form whatsoever. The Dick Smith Electronics copyright message
+  9   0000              ; must not be removed from this source code or from ROM program. All rights
+ 10   0000              ; commercial and otherwise are retained by th􀈊 copjright holder
+ 11   0000              ;
+ 12   0000              ; Permission is granted for constructors of the VZ 200/300 terminal
+ 13   0000              ; interface to use these routines for construction of said project
+ 14   0000              ; and for instructional use ONLY.
+ 15   0000              ;
+ 16   0000              ; This source code (and all routines contained herein) shall remain the
+ 17   0000              ; property of Dick Smith Electronics Pty Ltd. Any variation of these copyright
+ 18   0000              ; notices must be in writing from Dick Smith Electronics Pty Ltd.
+ 19   0000              ;
+ 20   0000              ;
+ 21   0000              ; This source code file is set up to be assembled using Microsoft's M80
+ 22   0000              ; macro assembler and was developed on a DSE Bondwell 14 portable computer.
+ 23   0000              ;
+ 24   0000              ; -------------------------------------------------------------------------
+ 25   0000              ; NOTE: Adjusted to compile with today's crossassembler (sjasmplus)
+ 26   0000              ;
+ 27   0000              crtdge		equ		04000h
+ 28   0000              stack		equ		09000h
+ 29   0000
+ 30   0000              vzdelay		equ		060h		; rom delay routine, delay value in bc
+ 31   0000              beep		equ		03450h		; beep routine
+ 32   0000              pcrlf1		equ		03ae2h		; send cr and lf to printer
+ 33   0000              list		equ		058dh		; printer driver
+ 34   0000              listst		equ		05c4h		; printer status, bit 0 of A=0 if ready
+ 35   0000              chrot		equ		033ah		; character output routine
+ 36   0000              exitkey		equ		101			; shift 'X' is exit from term
+ 37   0000              outadr		equ		05800h		; transmit latch address
+ 38   0000              inadr		equ		05000h		; input address
+ 39   0000              toplin		equ 	28672		; top line of screen
+ 40   0000              nolin		equ		480			; (number of lines -1) * 32
+ 41   0000              ;
+ 42   0000              ; ascii definition
+ 43   0000              ;
+ 44   0000              home		equ		28
+ 45   0000              cr			equ		13
+ 46   0000              esc			equ		27
+ 47   0000              bell		equ		7
+ 48   0000              ff			equ		12
+ 49   0000              lf			equ		10
+ 50   0000              bs			equ		8
+ 51   0000              ht			equ		9
+ 52   0000              ;
+ 53   0000              ; Now define our storage area. where basic text usually starts
+ 54   0000              ;
+ 55   0000              dumsg		equ		08000h			; part of signon message that changes
+ 56   0000              pntmsg		equ		dumsg+25		; printer on/off message
+ 57   0000              dbits		equ		pntmsg+24		; dbits message
+ 58   0000              sbits		equ		dbits+24		; sbits message
+ 59   0000              parmsg		equ		sbits+24		; parity message
+ 60   0000              plmsg		equ		parmsg+24		; strip parity message
+ 61   0000              pntflg		equ		plmsg+count3	; printer on/off flag
+ 62   0000              dupflg		equ		pntflg+1		; duplex flag, 0=full
+ 63   0000              plflg		equ		dupflg+1		; add lf to cr flag
+ 64   0000              char		equ		plflg+1			; character found
+ 65   0000              flag		equ		char+1			; keyboard flag
+ 66   0000              curpos		equ		flag+1			; column counter for output routine
+ 67   0000              cursor		equ 	curpos+1		; cursor location
+ 68   0000              bufend		equ		09000h			; to accomodate VZ-200/300
+ 69   0000
+ 70   0000
+ 71   0000              	org	04000h
+ 72   4000              begadr		equ		$
+ 73   4000 AA           	defb 	0aah					; mask for rom pack installation recognition
+ 74   4001 55           	defb	055h					; checked at power-up by the basic roms
+ 75   4002 E7           	defb	0e7h
+ 76   4003 18           	defb 	018h
+ 77   4004              ;
+ 78   4004 C3 84 41     	jp		start
+ 79   4007              ;
+ 80   4007              ; A few messages....
+ 81   4007              ;
+ 82   4007 4F 4E 20     onmsg	defb	'ON '
+ 83   400A 4F 46 46     offmsg	defb	'OFF'
+ 84   400D 46 55 4C 4C  fullmsg	defb	'FULL'
+ 85   4011 48 41 4C 46  halfmsg	defb	'HALF'
+ 86   4015              ;
+ 87   4015 0C           signon	defb	ff
+ 88   4016 56 5A 2D 32  		defb 	"VZ-200/300 RS-232 - VERSION 1.5",cr
+ 88   401A 30 30 2F 33
+ 88   401E 30 30 20 52
+ 88   4022 53 2D 32 33
+ 88   4026 32 20 2D 20
+ 88   402A 56 45 52 53
+ 88   402E 49 4F 4E 20
+ 88   4032 31 2E 35 0D
+ 89   4036 28 43 29 20  		defb 	"(C) 1985 DICK SMITH ELECTRONICS",cr
+ 89   403A 31 39 38 35
+ 89   403E 20 44 49 43
+ 89   4042 4B 20 53 4D
+ 89   4046 49 54 48 20
+ 89   404A 45 4C 45 43
+ 89   404E 54 52 4F 4E
+ 89   4052 49 43 53 0D
+ 90   4056 2D 2D 2D 2D  		defb 	"-------------------------------",cr
+ 90   405A 2D 2D 2D 2D
+ 90   405E 2D 2D 2D 2D
+ 90   4062 2D 2D 2D 2D
+ 90   4066 2D 2D 2D 2D
+ 90   406A 2D 2D 2D 2D
+ 90   406E 2D 2D 2D 2D
+ 90   4072 2D 2D 2D 0D
+ 91   4076 30 5D 20 45  		defb	"0] ENTER TERMINAL",cr
+ 91   407A 4E 54 45 52
+ 91   407E 20 54 45 52
+ 91   4082 4D 49 4E 41
+ 91   4086 4C 0D
+ 92   4088 31 5D 20 46  		defb 	"1] FULL/HALF DUPLEX:",0
+ 92   408C 55 4C 4C 2F
+ 92   4090 48 41 4C 46
+ 92   4094 20 44 55 50
+ 92   4098 4C 45 58 3A
+ 92   409C 00
+ 93   409D              ;
+ 94   409D 46 55 4C 4C  ivals	defb 	"FULL",cr
+ 94   40A1 0D
+ 95   40A2 32 5D 20 54  		defb	"2] TOGGLE PRINTER  :"
+ 95   40A6 4F 47 47 4C
+ 95   40AA 45 20 50 52
+ 95   40AE 49 4E 54 45
+ 95   40B2 52 20 20 3A
+ 96   40B6 4F 46 46 0D  		defb	"OFF",cr
+ 97   40BA 33 5D 20 53  		defb	"3] SET # DATA BITS :"
+ 97   40BE 45 54 20 23
+ 97   40C2 20 44 41 54
+ 97   40C6 41 20 42 49
+ 97   40CA 54 53 20 3A
+ 98   40CE 38 20 20 0D  		defb	"8  ",cr
+ 99   40D2 34 5D 20 53  		defb	"4] SET # STOP BITS :"
+ 99   40D6 45 54 20 23
+ 99   40DA 20 53 54 4F
+ 99   40DE 50 20 42 49
+ 99   40E2 54 53 20 3A
+100   40E6 31 20 20 0D  		defb	"1  ",cr
+101   40EA 35 5D 20 53  		defb	"5] SET PARITY      :"
+101   40EE 45 54 20 50
+101   40F2 41 52 49 54
+101   40F6 59 20 20 20
+101   40FA 20 20 20 3A
+102   40FE 4E 20 20 0D  		defb	"N  ",cr
+103   4102 36 5D 20 41  		defb	"6] ADD LF TO CR    :"
+103   4106 44 44 20 4C
+103   410A 46 20 54 4F
+103   410E 20 43 52 20
+103   4112 20 20 20 3A
+104   4116              count1	equ		$
+105   4116 4F 46 46     		defb	"OFF"
+106   4119 0D 0D        		defb	cr,cr
+107   411B 2A 2A 2A 2A  		defb	"******* WHEN IN TERMINAL *******"
+107   411F 2A 2A 2A 20
+107   4123 57 48 45 4E
+107   4127 20 49 4E 20
+107   412B 54 45 52 4D
+107   412F 49 4E 41 4C
+107   4133 20 2A 2A 2A
+107   4137 2A 2A 2A 2A
+108   413B 2A 20 20 53  		defb	"*  SHIFT - X TO EXIT TERMINAL  *"
+108   413F 48 49 46 54
+108   4143 20 2D 20 58
+108   4147 20 54 4F 20
+108   414B 45 58 49 54
+108   414F 20 54 45 52
+108   4153 4D 49 4E 41
+108   4157 4C 20 20 2A
+109   415B 2A 2A 2A 2A  		defb	"********************************",0
+109   415F 2A 2A 2A 2A
+109   4163 2A 2A 2A 2A
+109   4167 2A 2A 2A 2A
+109   416B 2A 2A 2A 2A
+109   416F 2A 2A 2A 2A
+109   4173 2A 2A 2A 2A
+109   4177 2A 2A 2A 2A
+109   417B 00
+110   417C              count2	equ		$
+111   417C              count3	equ		count2-count1
+112   417C              ivals2	equ		$
+113   417C 00           		defb  	0					; printer on/off flag
+114   417D 00           		defb 	0					; duplex flag
+115   417E 00           		defb	0					; add lf to cr flag
+116   417F 00           		defb	0					; where characters are placed when received from keyboard
+117   4180 00           		defb	0					; a flag for keyboard driver
+118   4181 00           		defb	0					; column counter
+119   4182 00 00        		defw	0					; cursor position
+120   4184              ;
+121   4184              ivalend	equ		$
+122   4184
+123   4184 F3           start	di							;get rid of the 6847 interrupt
+124   4185 31 00 90     		ld sp,stack					;make a stack
+125   4188 21 9D 40     		ld hl,ivals					;point to initial values
+126   418B 11 00 80     		ld de,dumsg					;where to put them
+127   418E 01 E7 00     		ld bc,ivalend-ivals			;number to put
+128   4191 ED B0        		ldir						;init the system
+129   4193 3A E1 80     start1	ld a,(plflg)				;get crlf flag
+130   4196 F5           		push af						;save it
+131   4197 3E 01        		ld a,1						;we want crlf on signon
+132   4199 32 E1 80     		ld (plflg),a
+133   419C 21 15 40     		ld hl,signon				;point to signon
+134   419F CD 4D 43     		call msgout
+135   41A2 21 00 80     		ld hl,dumsg
+136   41A5 CD 4D 43     		call msgout
+137   41A8 F1           		pop af						;restore crlf flag
+138   41A9 32 E1 80     		ld (plflg),a				;and save it here
+139   41AC CD 50 34     		call beep					;make a noise
+140   41AF 21 93 41     		ld hl,start1				;set return address
+141   41B2 E5           		push hl						;put it on the stack
+142   41B3 CD 66 44     kget	call getkey					;get a key
+143   41B6 B7           		or a
+144   41B7 28 FA        		jr z,kget					;loop till key ready
+145   41B9 D6 30        		sub '0'						;make it 0-10
+146   41BB 38 F6        		jr c,kget					;continue if error
+147   41BD FE 07        		cp 6+1
+148   41BF 30 F2        		jr nc,kget					;continue if error
+149   41C1 21 CE 41     		ld hl,cmdtab				;point to command table address
+150   41C4 87           		add a,a						;make it *2
+151   41C5 5F           		ld e,a						;put it in de
+152   41C6 16 00        		ld d,0
+153   41C8 19           		add hl,de					;now hl points to correct table entry
+154   41C9 5E           		ld e,(hl)					;get lsb
+155   41CA 23           		inc hl
+156   41CB 56           		ld d,(hl)					;get msb, now de points to correct address
+157   41CC EB           		ex de,hl
+158   41CD E9           		jp (hl)						;go to that address
+159   41CE              ;
+160   41CE 56 42        cmdtab	defw	term				;actual terminal
+161   41D0 DC 41        		defw	setfh				;set full/half duplex
+162   41D2 F7 41        		defw	prnton				;turn printer on/off
+163   41D4 38 42        		defw	sdbits 				;set # of data bits
+164   41D6 47 42        		defw	ssbits				;set # of stop bits
+165   41D8 0B 42        		defw	spar 				;set parity
+166   41DA 01 42        		defw 	addlf				;add lf to cr
+167   41DC
+168   41DC              ;
+169   41DC              ; set full or half duplex
+170   41DC              ;
+171   41DC              setfh
+172   41DC 3A E0 80     	ld a,(dupflg)					;check current
+173   41DF B7           	or a							;check for full already
+174   41E0 3E 01        	ld a,1							;make half just in case
+175   41E2 21 11 40     	ld hl,halfmsg
+176   41E5 28 04        	jr z,setfh1
+177   41E7 AF           	xor a							;else make full
+178   41E8 21 0D 40     	ld hl,fullmsg
+179   41EB              setfh1:
+180   41EB 32 E0 80     	ld (dupflg),a
+181   41EE 11 00 80     	ld de,dumsg						;where to go to
+182   41F1 01 04 00     	ld bc,4							;move it
+183   41F4 ED B0        	ldir
+184   41F6 C9           	ret
+185   41F7              ;
+186   41F7              ;toggle printer
+187   41F7              ;
+188   41F7 21 DF 80     prnton	ld hl,pntflg				;check printer flag
+189   41FA 11 19 80     		ld de,pntmsg
+190   41FD CD 21 42     		call toggle
+191   4200 C9           		ret
+192   4201              ;
+193   4201              ;add lf to cr
+194   4201              ;
+195   4201 21 E1 80     addlf	ld hl,plflg
+196   4204 11 79 80     		ld de,plmsg
+197   4207 CD 21 42     		call toggle
+198   420A C9           		ret
+199   420B              ;
+200   420B              ;set parity
+201   420B              ;
+202   420B 3A 61 80     spar	ld a,(parmsg)				;get parity message
+203   420E FE 4E        		cp 'N'						;none?
+204   4210 0E 45        		ld c,'E'					;make it even then
+205   4212 28 08        		jr z,stpar1					;save this one if z flag set
+206   4214 FE 45        		cp 'E'
+207   4216 0E 4F        		ld c,'O'
+208   4218 28 02        		jr z,stpar1					;if even make it odd
+209   421A 0E 4E        		ld c,'N'
+210   421C 79           stpar1	ld a,c
+211   421D 32 61 80     		ld (parmsg),a
+212   4220 C9           		ret
+213   4221              ;
+214   4221 7E           toggle	ld a,(hl)					;get current flag value
+215   4222 B7           		or a						;is it zero
+216   4223 3E 01        		ld a,1						;make it one if so
+217   4225 28 01        		jr z,toggl
+218   4227 AF           		xor a						;else make it zero
+219   4228 77           toggl	ld (hl),a					;save new value
+220   4229 21 0A 40     		ld hl,offmsg
+221   422C B7           		or a
+222   422D 28 03        		jr z,moveit1
+223   422F 21 07 40     		ld hl,onmsg
+224   4232 01 03 00     moveit1	ld bc,3
+225   4235 ED B0        moveit	ldir
+226   4237 C9           		ret
+227   4238              ;
+228   4238              ;set databits
+229   4238              ;
+230   4238 3A 31 80     sdbits	ld a,(dbits)				;get current value
+231   423B FE 37        		cp '7'						;seven?
+232   423D 3E 38        		ld a,'8'					;just in case
+233   423F 28 02        		jr z,sdb1
+234   4241 3E 37        		ld a,'7'
+235   4243 32 31 80     sdb1	ld (dbits),a
+236   4246 C9           		ret
+237   4247              ;
+238   4247              ;set stop bits
+239   4247              ;
+240   4247 3A 49 80     ssbits	ld a,(sbits)				;get current value
+241   424A FE 31        		cp '1'						;one?
+242   424C 3E 32        		ld a,'2'					;just in case
+243   424E 28 02        		jr z,ssb2					;if z, must be 1, make it 2
+244   4250 3E 31        		ld a,'1'
+245   4252 32 49 80     ssb2:	ld (sbits),a
+246   4255 C9           		ret
+247   4256              ;
+248   4256 CD 56 43     term	call clrscr					;clear screen
+249   4259 CD 1D 43     tryser	call chkstr					;check for incomming serial stuff
+250   425C 20 0E        		jr nz,term1					;no-look for keyboard input then
+251   425E CD 8F 42     		call inchr					;stuff there, get it
+252   4261 CD 6E 43     		call chrout					;and print it on the screen
+253   4264 4F           		ld c,a						;put char in correct register for list routine
+254   4265 3A DF 80     		ld a,(pntflg)
+255   4268 B7           		or a
+256   4269 C4 53 44     		call nz,list1
+257   426C CD 66 44     term1	call getkey					;see if user has typed anything
+258   426F B7           		or a
+259   4270 28 E7        		jr z,tryser					;no, try the serial instead
+260   4272 FE 65        		cp exitkey					;see if a return to main loop key
+261   4274 C8           		ret z						;return if so
+262   4275 F5           		push af						;save char
+263   4276 CD C6 42     		call outchr					;send to RS-232
+264   4279 F1           		pop af						;restore for screen output
+265   427A 4F           		ld c,a
+266   427B 3A E0 80     		ld a,(dupflg)				;check duplex first
+267   427E B7           		or a
+268   427F 79           		ld a,c
+269   4280 28 D7        		jr z,tryser					;jump if full duplex
+270   4282 CD 6E 43     		call chrout					;and screen as well if half duplex
+271   4285 4F           		ld c,a						;put char in correct register for list routine
+272   4286 3A DF 80     		ld a,(pntflg)
+273   4289 B7           		or a
+274   428A C4 53 44     		call nz,list1
+275   428D 18 CA        		jr tryser
+276   428F              ;
+277   428F              ;get character from board
+278   428F              ;
+279   428F              ;incoming char must have been checked by a call to chkstr
+280   428F              ;
+281   428F              ;This routine is time critical and as I took,be a long time to get it right
+282   428F              ;I would suggest that it not be touched
+283   428F              ;
+284   428F CD 2E 43     inchr	call del3a					;wait for 1/2 bit time, half way thru start bit
+285   4292 CD 23 43     		call del300					;and 1 bit time, half way thru data bit 0
+286   4295 3A 31 80     		ld a,(dbits)				;get data bit value
+287   4298 D6 30        		sub '0'						;remove ascii offset, 8 for 8 bits 7 for 7
+288   429A 5F           		ld e,a						;and put the calculated data bit value in e
+289   429B 06 08        		ld b,8						;must always do 8 shifts to get bit 0 correct
+290   429D 0E 00        		ld c,0						;accumulator for our serial bit stream
+291   429F 78           inchr1	ld a,b						;check for last loop
+292   42A0 FE 01        		cp 1						;are we nearly finished (we are if seven bits)
+293   42A2 20 07        		jr nz,inchr2				; no-continue
+294   42A4 7B           		ld a,e						;see if 7 or 8 data bits required
+295   42A5 FE 08        		cp 8						;if e= 8, 8 bits are needed and one further' loop
+296   42A7 28 0E        		jr z,inchr3
+297   42A9 18 0E        		jr inchr4					;finish up if seven
+298   42AB 3A 00 50     inchr2 ld a,(inadr)					;get the entered bit
+299   42AE E6 80        		and 10000000b				;mask off invalid bits
+300   42B0 B1           		or c						;mask on our accumulated value
+301   42B1 4F           		ld c,a						;and save it here
+302   42B2 CB 39        		srl c						;and shift it into the next bit position
+303   42B4 CD 23 43     		call del300					;delay one 300 baud bit time
+304   42B7 10 E6        inchr3 	djnz inchr1					;loop for all data bits
+305   42B9 CD 3A 43     inchr4	call del302					;wait till end of data bit
+306   42BC 3A 61 80     		ld a,(parmsg)				;check if parity delay needed
+307   42BF FE 4E        		cp 'N'
+308   42C1 C4 23 43     		call nz,del300
+309   42C4 79           		ld a,c						; get the char back
+310   42C5 C9           		ret
+311   42C6              ;
+312   42C6              ;output char
+313   42C6              ;
+314   42C6 F5           outchr	push af						;save the char
+315   42C7 3E FF        		ld a,255					;make a start bit
+316   42C9 32 00 58     		ld (outadr),a				;send it
+317   42CC CD 23 43     		call del300					;and do a delay for 1 bit time
+318   42CF 3A 31 80     		ld a,(dbits)				;get # of data bits
+319   42D2 D6 30        		sub '0'
+320   42D4 47           		ld b,a						;and put calculated data bit value in b
+321   42D5 F1           		pop af
+322   42D6 F5           		push af
+323   42D7 4F           		ld c,a
+324   42D8 CB 39        snd1	srl c						;rotate bit 0 of c into carry flag
+325   42DA 3E 00        		ld a,00000000b				;in case of carry
+326   42DC 38 02        		jr c,snd2					;send if bit was 1
+327   42DE 3E 80        		ld a,10000000b				;make it one
+328   42E0 32 00 58     snd2	ld (outadr),a				;send the char
+329   42E3 CD 23 43     		call del300					;delay for one bit time
+330   42E6 10 F0        		djnz snd1
+331   42E8 F1           		pop af						;restore char that was sent
+332   42E9 4F           		ld c,a						;save it in c
+333   42EA 3A 61 80     		ld a,(parmsg)				;check for parity
+334   42ED FE 4E        		cp 'N'
+335   42EF 28 1C        		jr z,nopar0					;z if no parity
+336   42F1 79           		ld a,c						;get back restored character
+337   42F2 B7           		or a						;set parity flag
+338   42F3 3A 61 80     		ld a,(parmsg)				;and get parity type for later testing
+339   42F6 E2 03 43     		jp po,oddpar				;jump if parity of the byte is odd
+340   42F9 FE 45        		cp 'E'						;was it supposed to be even
+341   42FB 3E 80        tstpar	ld a,10000000b
+342   42FD 28 08        		jr z,sndpar
+343   42FF 3E 00        		ld a,00000000b
+344   4301 18 04        		jr sndpar
+345   4303 FE 4F        oddpar	cp 'O'						;set z flag if it was supposed to be odd
+346   4305 18 F4        		jr tstpar
+347   4307 32 00 58     sndpar	ld (outadr),a
+348   430A CD 23 43     		call del300
+349   430D 3A 49 80     nopar0	ld a,(sbits)				;get # of stop bits
+350   4310 D6 30        		sub '0'						;make it hex 1 or 2
+351   4312 47           		ld b,a
+352   4313 AF           sbdel1	xor a						;make a stop bit
+353   4314 32 00 58     		ld (outadr),a
+354   4317 CD 23 43     		call del300					;delay for middle of stop bit
+355   431A 10 F7        		djnz sbdel1
+356   431C C9           		ret
+357   431D
+358   431D              ;
+359   431D              ;check for character coming	in
+360   431D              ;
+361   431D              ;RX provides an actibe low input to the address buffer
+362   431D              ;
+363   431D              ;i.e. returned value is nz if a char is ready, z if not
+364   431D              ;
+365   431D 3A 00 50     chkstr	ld a,(inadr)				;check input address
+366   4320 CB 7F        		bit 7,a
+367   4322 C9           		ret
+368   4323              ;
+369   4323              ;These delay routines provide a correct mark to space ratio for checking
+370   4323              ;and sending the serial bit stream and are VERY VERY VERY critical
+371   4323              ;if you send a series of 'U' (a character with the same mark to space ratio)
+372   4323              ;characters and look at the output of the interface on a CRO, you will
+373   4323              ;see what I mean
+374   4323              ;
+375   4323              ;
+376   4323 F5           del300	push af
+377   4324 C5           		push bc
+378   4325 CD 2E 43     		call del3a
+379   4328 CD 2E 43     		call del3a
+380   432B C1           		pop bc
+381   432C F1           		pop af
+382   432D C9           		ret
+383   432E              ;
+384   432E C5           del3a	push bc
+385   432F 3E 23        		ld a,215/6					;300 baud delay
+386   4331 06 0B        loop0	ld b,11
+387   4333 10 FE        loop1	djnz loop1
+388   4335 3D           		dec a
+389   4336 20 F9        		jr nz,loop0
+390   4338 C1           		pop bc
+391   4339 C9           		ret
+392   433A              ;
+393   433A CD 2E 43     del302	call del3a					;one 1/2 300 baud delay
+394   433D C5           		push bc						;save this
+395   433E 3E 22        		ld a,205/6					;next timing constant
+396   4340 18 EF        		jr loop0
+397   4342              ;
+398   4342 F5           kdelay	push af
+399   4343 C5           		push bc
+400   4344 01 FF 4F     		ld bc,04fffh				;delay value
+401   4347 CD 60 00     		call vzdelay				;delay it
+402   434A C1           		pop bc						;get registers back
+403   434B F1           		pop af
+404   434C C9           		ret
+405   434D              ;
+406   434D 7E           msgout	ld a,(hl)
+407   434E B7           		or a
+408   434F C8           		ret z
+409   4350 CD 6E 43     		call chrout
+410   4353 23           		inc hl
+411   4354 18 F7        		jr msgout
+412   4356              ;
+413   4356 21 00 70     clrscr	ld hl,toplin
+414   4359 22 E5 80     		ld (cursor),hl
+415   435C 11 01 70     		ld de,toplin+1
+416   435F 01 FF 01     		ld bc,nolin+31
+417   4362 36 60        		ld (hl),96
+418   4364 ED B0        		ldir
+419   4366 AF           		xor a
+420   4367 32 E4 80     		ld (curpos),a
+421   436A 32 00 68     		ld (26624),a
+422   436D C9           		ret
+423   436E              ;
+424   436E F5           chrout	push af
+425   436F E5           		push hl
+426   4370 C5           		push bc
+427   4371 D5           		push de
+428   4372 CD 7A 43     		call pntit
+429   4375 D1           		pop de
+430   4376 C1           		pop bc
+431   4377 E1           		pop hl
+432   4378 F1           		pop af
+433   4379 C9           		ret
+434   437A              ;
+435   437A ED 5B E5 80  pntit	ld de,(cursor)
+436   437E FE 0C        		cp ff
+437   4380 28 D4        		jr z,clrscr
+438   4382 FE 0D        		cp cr
+439   4384 28 7E        		jr z,crt					;do a cr
+440   4386 FE 08        		cp bs
+441   4388 28 35        		jr z,bsp
+442   438A FE 09        		cp ht
+443   438C 28 16        		jr z,fsp
+444   438E FE 0A        		cp lf
+445   4390 28 4A        		jr z,lfd
+446   4392 FE 07        		cp bell
+447   4394 CA 50 34     		jp z,beep
+448   4397 CB 7F        		bit 7,a
+449   4399 20 08        		jr nz,grap
+450   439B FE 20        		cp ' '						;if not recognized control char, return
+451   439D F8           		ret m
+452   439E CD 5D 44     		call fold					;fold lower to upper
+453   43A1 CB F7        		set 6,a						;change non-alphabetical char to inverted
+454   43A3              ;
+455   43A3 12           grap	ld (de),a
+456   43A4 13           fsp		inc de
+457   43A5 ED 53 E5 80  		ld (cursor),de
+458   43A9 3A E4 80     		ld a,(curpos)
+459   43AC 3C           		inc a
+460   43AD 32 E4 80     		ld (curpos),a
+461   43B0 FE 20        		cp ' '
+462   43B2 F8           		ret m
+463   43B3 CD F3 43     		call docrlf
+464   43B6 3A DF 80     		ld a,(pntflg)				; printer on?
+465   43B9 B7           		or a
+466   43BA C8           		ret z						; return if not
+467   43BB CD 49 44     		call pcrlf
+468   43BE C9           		ret
+469   43BF              ;
+470   43BF 3A E4 80     bsp		ld a,(curpos)
+471   43C2 B7           		or a
+472   43C3 28 0A        		jr z,bsp1
+473   43C5 3D           		dec a
+474   43C6 32 E4 80     bsp2	ld (curpos),a
+475   43C9 1B           		dec de
+476   43CA ED 53 E5 80  		ld (cursor),de
+477   43CE C9           		ret
+478   43CF E5           bsp1	push hl
+479   43D0 21 00 70     		ld hl,toplin
+480   43D3 B7           		or a
+481   43D4 ED 52        		sbc hl,de
+482   43D6 E1           		pop hl
+483   43D7 C8           		ret z
+484   43D8 3E 1F        		ld a,31
+485   43DA 18 EA        		jr bsp2
+486   43DC              ;
+487   43DC 3A E4 80     lfd		ld a,(curpos)
+488   43DF 4F           		ld c,a
+489   43E0 06 00        		ld b,0
+490   43E2 C5           		push bc
+491   43E3 CD F3 43     		call docrlf
+492   43E6 C1           		pop bc
+493   43E7 EB           		ex de,hl
+494   43E8 09           		add hl,bc
+495   43E9 EB           		ex de,hl
+496   43EA ED 53 E5 80  		ld (cursor),de
+497   43EE 79           		ld a,c
+498   43EF 32 E4 80     		ld (curpos),a
+499   43F2 C9           		ret
+500   43F3              ;
+501   43F3 3A E1 80     docrlf	ld a,(plflg)				;get current settings
+502   43F6 F5           		push af						;save it
+503   43F7 3E 01        		ld a,1						;make it so it does add on lf
+504   43F9 32 E1 80     		ld (plflg),a
+505   43FC CD 04 44     		call crt					;do it
+506   43FF F1           		pop af						;get back original flag
+507   4400 32 E1 80     		ld (plflg),a				;and save it again
+508   4403 C9           		ret
+509   4404              ;
+510   4404 E5           crt		push hl
+511   4405 EB           		ex de,hl
+512   4406 3A E4 80     		ld a,(curpos)
+513   4409 5F           		ld e,a
+514   440A 16 00        		ld d,0
+515   440C B7           		or a
+516   440D ED 52        		sbc hl,de
+517   440F 3A E1 80     		ld a,(plflg)				;do we want to add on an lf to a cr
+518   4412 B7           		or a						;if zero we don't
+519   4413 28 04        		jr z,nolf
+520   4415 11 20 00     		ld de,32					;add on an lf if cr
+521   4418 19           		add hl,de
+522   4419 EB           nolf	ex de,hl
+523   441A 21 00 72     		ld hl,29184
+524   441D B7           		or a
+525   441E ED 52        		sbc hl,de					;check for end of screen
+526   4420 28 0A        		jr z,scroll					;scroll if so
+527   4422 ED 53 E5 80  write4	ld (cursor),de
+528   4426 AF           		xor a
+529   4427 32 E4 80     		ld (curpos),a
+530   442A E1           		pop hl
+531   442B C9           		ret
+532   442C              ;
+533   442C 21 20 70     scroll	ld hl,toplin+32
+534   442F 11 00 70     		ld de,toplin
+535   4432 01 E0 01     		ld bc,nolin
+536   4435 ED B0        		ldir
+537   4437 21 E0 71     		ld hl,29152
+538   443A 11 E1 71     		ld de,29153
+539   443D 01 1F 00     		ld bc,31
+540   4440 36 60        		ld (hl),96
+541   4442 ED B0        		ldir
+542   4444 11 E0 71     		ld de,29152
+543   4447 18 D9        		jr write4
+544   4449              ;
+545   4449 CD C4 05     pcrlf	call listst					;check printer status
+546   444C CB 47        		bit 0,a
+547   444E C0           		ret nz						;return if printer not ready
+548   444F CD E2 3A     		call pcrlf1					;send crlf to printer if printer is ready
+549   4452 C9           		ret
+550   4453              ;
+551   4453 CD C4 05     list1	call listst
+552   4456 CB 47        		bit 0,a
+553   4458 C0           		ret nz						;return if printer not ready
+554   4459 79           		ld a,c
+555   445A C3 8D 05     		jp list						;list it and return
+556   445D              ;
+557   445D FE 61        fold	cp 'a'
+558   445F D8           		ret c
+559   4460 FE 7B        		cp 'z'+1
+560   4462 D0           		ret nc
+561   4463 E6 5F        		and 05fh					;make upper if lower
+562   4465 C9           		ret
+563   4466              ;
+564   4466              ;Keyboard driver for VZ-200/300
+565   4466              ;This keyboard drive is (c) Dick Smith Electronics and (c) 1982,1983,1984
+566   4466              ;Video Technology HK Ltd
+567   4466              ;
+568   4466              row1	equ		068feh
+569   4466              row2	equ		068dfh
+570   4466              ;
+571   4466 21 FE 68     getkey	ld hl,row1					;point to first row
+572   4469 0E 08        		ld c,8						;row counter
+573   446B 06 06        scan1	ld b,6						;column counter
+574   446D 7E           		ld a,(hl)					;get first key
+575   446E F6 04        		or 4						;mask out bit 2
+576   4470 1F           rot		rra							;rotate bits
+577   4471 30 58        		jr nc,found					;exit if key pressed
+578   4473 10 FB        		djnz rot					;else try next bit
+579   4475 CB 05        		rlc l						;get next address
+580   4477 0D           		dec c						;dec row counter
+581   4478 20 F1        		jr nz,scan1					;try next row
+582   447A 06 04        		ld b,4						;get col counter
+583   447C 21 DF 68     		ld hl,row2					;get next address
+584   447F 7E           		ld a,(hl)					;read key
+585   4480 CB 57        		bit 2,a						;test bit 2 for keypress
+586   4482 28 3D        		jr z,minus					;exit if key pressed
+587   4484 CB 05        		rlc l						;get next address
+588   4486 7E           		ld a,(hl)					;read key
+589   4487 CB 57        		bit 2,a						;test for keypress
+590   4489 28 3A        		jr z,carret					;exit if cr key pressed
+591   448B CB 05        		rlc l						;get next addr
+592   448D CB 57        		bit 2,a
+593   448F 28 38        		jr z,colon					;test if ':' pressed
+594   4491 CB 05        		rlc l						;get next addr
+595   4493 CB 05        		rlc l						;last addr had no char
+596   4495 7E           		ld a,(hl)					;get the key
+597   4496 CB 57        		bit 2,a						;test for cntrl
+598   4498 28 11        		jr z,ctrl
+599   449A CB 05        		rlc l						;get next address
+600   449C 7E           		ld a,(hl)					;read key
+601   449D CB 57        		bit 2,a
+602   449F 28 11        		jr z,shift					;exit if shift key pressed
+603   44A1 3E FF        		ld a,0ffh					;get no char code
+604   44A3 32 E2 80     		ld (char),a
+605   44A6 AF           		xor a
+606   44A7 32 E3 80     		ld (flag),a					;clear shift flag
+607   44AA C9           		ret
+608   44AB              ;
+609   44AB 3A E3 80     ctrl	ld a,(flag)
+610   44AE CB D7        		set 2,a
+611   44B0 18 05        		jr keyexit
+612   44B2              ;
+613   44B2 3A E3 80     shift	ld a,(flag)					;get flag
+614   44B5 CB CF        		set 1,a						;set bit 1 flag
+615   44B7 32 E3 80     keyexit	ld (flag),a
+616   44BA 3E FF        		ld a,0ffh					;make no char code
+617   44BC 32 E2 80     		ld (char),a
+618   44BF AF           same	xor a						;if char the same, return no char so as to
+619   44C0              									;remove the key repeat
+620   44C0 C9           		ret
+621   44C1 0E 03        minus	ld c,3						;set row count
+622   44C3 18 06        		jr found					;exit
+623   44C5              ;
+624   44C5 0E 02        carret 	ld c,2						;set row count
+625   44C7 18 02        		jr found
+626   44C9 0E 01        colon	ld c,1						;set row count
+627   44CB 21 05 45     found	ld hl,txtble				;point to lookup table
+628   44CE 1E 00        		ld e,0						;clear shift/control offset
+629   44D0 3A E3 80     		ld a,(flag)
+630   44D3 CB 57        		bit 2,a						;test for ctrl key hit last time
+631   44D5 28 04        		jr z,noctrl
+632   44D7 1E 60        		ld e,48*2					;make up control table offset
+633   44D9 18 06        		jr noshift
+634   44DB              ;
+635   44DB CB 4F        noctrl	bit 1,a						;test for the shift key
+636   44DD 28 02        		jr z,noshift
+637   44DF 1E 30        		ld e,48						;set shifted offset
+638   44E1 3E 08        noshift	ld a,8						;setup row count
+639   44E3 91           		sub c						;calc offset
+640   44E4 4F           		ld c,a						;store in c
+641   44E5 3E 06        		ld a,6						;setup column count
+642   44E7 90           		sub b						;calc offset
+643   44E8 47           		ld b,a						;sore in b
+644   44E9 CD FA 44     		call cond					;get table offset in a
+645   44EC 83           		add a,e						;add shift offset
+646   44ED 06 00        		ld b,0						;clear b
+647   44EF 4F           		ld c,a						;offset in c
+648   44F0 09           		add hl,bc					;get character position
+649   44F1 7E           		ld a,(hl)					;get char in a
+650   44F2 21 E2 80     		ld hl,char					;gett last char
+651   44F5 BE           		cp (hl)						;same as last?
+652   44F6 28 C7        		jr z,same
+653   44F8 77           		ld (hl),a					;if not same, save the char
+654   44F9 C9           		ret
+655   44FA              ;
+656   44FA AF           cond	xor a						;clear a reg
+657   44FB B9           		cp c						;is c=0
+658   44FC 28 05        		jr z,hre					;bypass if yes
+659   44FE C6 06        mult	add a,6						;inc by six
+660   4500 0D           		dec c						;dec counter
+661   4501 20 FB        		jr nz,mult
+662   4503 80           hre		add a,b						;add bit count
+663   4504 C9           		ret
+664   4505              ;
+665   4505 54 57 20 45  txtble	defb	'T','W',' ','E','Q','R'
+665   4509 51 52
+666   450B 47 53 20 44  		defb 	'G','S',' ','D','A','F'
+666   450F 41 46
+667   4511 42 58 20 43  		defb	'B','X',' ','C','Z','V'
+667   4515 5A 56
+668   4517 35 32 20 33  		defb	'5','2',' ','3','1','4'
+668   451B 31 34
+669   451D 4E 2E 20 2C  		defb	'N','.',' ',',',' ','M'
+669   4521 20 4D
+670   4523 36 39 2D 38  		defb 	'6','9','-','8','0','7'
+670   4527 30 37
+671   4529 59 4F 0D 49  		defb	'Y','O',$0d,'I','P','U'
+671   452D 50 55
+672   452F 48 4C 3A 4B  		defb	'H','L',':','K',';','J'
+672   4533 3B 4A
+673   4535              ;
+674   4535              ;shifted characters
+675   4535              ;
+676   4535 00           	defb	0						;shift T
+677   4536 00           	defb	0						;shift W
+678   4537 00           	defb	0
+679   4538 00           	defb	0						;shift E
+680   4539 00           	defb	0						;shift Q
+681   453A 00           	defb	0						;shift R
+682   453B 00           	defb	0						;shift G
+683   453C 00           	defb	0						;shift S
+684   453D 00           	defb	0						;cntrl
+685   453E 00           	defb	0						;shift D
+686   453F 00           	defb	0						;shift A
+687   4540 00           	defb	0						;shift F
+688   4541 00           	defb	0						;shift B
+689   4542 65           	defb	101						;shift X
+690   4543 00           	defb	0						;null
+691   4544 00           	defb	0						;shift C
+692   4545 00           	defb	0						;null
+693   4546 00           	defb	0						;null
+694   4547 25 22 20 23  	defb	'%','"',' ','#','!','$' ;shifted 52 312
+694   454B 21 24
+695   454D 00           	defb	0						;shift N
+696   454E 3E           	defb 	'>'						;shift .
+697   454F 00           	defb 	0
+698   4550 3C           	defb 	'<'						;shift ,
+699   4551 00           	defb	0						;null
+700   4552 5C           	defb	92						;shift M
+701   4553 26 29 3D 28  	defb	'&)=(@' 				;shifted 69-80
+701   4557 40
+702   4558 00           	defb	0						;shift 7
+703   4559 00           	defb	0						;shift Y
+704   455A 00           	defb	0						;shift O
+705   455B 00           	defb	0						;shift cr
+706   455C 00           	defb	0						;shift I
+707   455D 00           	defb	0						;shift P
+708   455E 00           	defb	0						;shift U
+709   455F 00           	defb	0						;shift H
+710   4560 3F           	defb	'?'						;shift L
+711   4561 2A           	defb	'*'						;shift :
+712   4562 2F           	defb	'/'						;shift K
+713   4563 2B           	defb	'+'						;shift ;
+714   4564 00           	defb	0						;shift J
+715   4565              ;
+716   4565              ;control characters
+717   4565 14           	defb	'T'-040h				;control T
+718   4566 17           	defb	'W'-040h				;control W
+719   4567 00           	defb	0
+720   4568 05           	defb	'E'-040h				;control E
+721   4569 11           	defb	'Q'-040h				;control Q
+722   456A 12           	defb	'R'-040h				;control R
+723   456B 07           	defb	'G'-040h				;control G
+724   456C 13           	defb	'S'-040h				;control S
+725   456D 00           	defb	0
+726   456E 00           	defb	0
+727   456F 01           	defb	'A'-040h				;control A
+728   4570 06           	defb	'F'-040h				;control F
+729   4571 02           	defb	'B'-040h				;control B
+730   4572 18           	defb	'X'-040h				;control X
+731   4573 00           	defb	0
+732   4574 03           	defb	'C'-040h				;control C
+733   4575 1A           	defb	'Z'-040h				;control Z
+734   4576 16           	defb	'V'-040h				;control V
+735   4577 00           	defb	0
+736   4578 00           	defb	0
+737   4579 00           	defb	0
+738   457A 00           	defb	0
+739   457B 00           	defb	0
+740   457C 00           	defb	0
+741   457D 0E           	defb	'N'-040h				;control N
+742   457E 00           	defb	0
+743   457F 00           	defb	0
+744   4580 00           	defb	0
+745   4581 00           	defb	0
+746   4582 0D           	defb	cr						;control M
+747   4583 00           	defb	0
+748   4584 00           	defb	0
+749   4585 00           	defb	0
+750   4586 00           	defb	0
+751   4587 00           	defb	0
+752   4588 00           	defb	0
+753   4589 19           	defb	'Y'-040h				;control Y
+754   458A 0F           	defb	'O'-040h				;control O
+755   458B 00           	defb	0
+756   458C 09           	defb	ht						;control I
+757   458D 10           	defb	'P'-040h				;control P
+758   458E 15           	defb	'U'-040h				;control U
+759   458F 08           	defb	bs						;control H
+760   4590 0C           	defb	ff						;control L
+761   4591 00           	defb	0
+762   4592 0B           	defb	'K'-040h				;control K
+763   4593 00           	defb	0
+764   4594 0A           	defb	lf						;control J
+765   4595              endadr		equ		$
+766   4595
+767   4595 FF FF FF...  	BLOCK 2048-(endadr-begadr),0ffh
+768   4800
+# file closed: src/RS232v1.5.asm
